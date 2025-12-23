@@ -14,8 +14,8 @@ QuESt PCM reads system input data from CSV files. To ensure the inputs are parse
         - renewables_timeseries_DA.csv
         - renewables_timeseries_RT.csv
     - [reserves/](#reserves)
-        - [DA_reserves_fixed_percentage.csv](#DA_reserves_default)
-        - [RT_reserves_fixed_percentage.csv](#RT_reserves_default)
+        - [DA_reserves_fixed_percentage.csv](#DA_reserve_default)
+        - [RT_reserves_fixed_percentage.csv](#RT_reserve_default)
         - [reserve_deployment.csv](#reserves_deployment)
         - [reserves_timeseries/](#reserves_timeseries)
             - ReserveName_timeseries_DA.csv

@@ -8,7 +8,7 @@
 
 Current release version: 0.0.1
 
-Release date: 01/06/2026
+Release date: 12/25/2025
 
 ## Table of Contents
 - [Introduction](#intro)
