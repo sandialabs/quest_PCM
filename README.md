@@ -195,7 +195,7 @@ The QuESt PCM tool is developed and maintained by the [Energy Storage Analytics 
 - Atri Bera
 - Tu Nguyen
 <p>
-  <img src="Images/SNL_Logo.jpg" width="260" alt="SNL"> <img src="Images/DOE_logo.jpg" width="350" alt="DOE">
+  <img src="Images/SNL_Logo.jpg" width="260" alt="SNL"> <img src="Images/DOE_Logo.jpg" width="350" alt="DOE">
 </p>
 
 [Back to Top](#top)
