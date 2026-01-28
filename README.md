@@ -6,9 +6,7 @@
 
 # **QuESt PCM**: A Production Cost Modeling Tool with High-Fidelity Models of Energy Storage Systems
 
-Current release version: 0.0.1
-
-Release date: 12/25/2025
+Current release version: 1.0.0
 
 ## Table of Contents
 - [Introduction](#intro)
@@ -26,7 +24,6 @@ Production cost models (PCM) are computational tools that simulate power system 
 <div style="text-align: center;">
 <img src = "Images/QuEST_PCM_IO.png" alt="overview" />
 </div>
-<!--QuESt Planning documentation is under development and will be available [here](https://github.com/sandialabs/snl-quest).-->
 
 [Back to Top](#top)
 ## Key Features of QuESt PCM
@@ -135,7 +132,10 @@ Two test cases are included with the initial release of QuESt PCM. One test case
 
 **Figure 1:** IEEE RTS-GMLC Test Case nodal model
 
-Some outputs of Quest PCM for a 5-day RTS-GMLC simulation (included in the [config](config/GMLC_config.yaml) file) are illustrated here. Figure 2 shows the system dispatch, generation costs, and interactive LMP plots obtained from the simulation.
+Some outputs of Quest PCM for a 5-day RTS-GMLC simulation (included in the [config](config/GMLC_config.yaml) file) are illustrated as follows:
+
+### System Operation 
+ QuESt PCM provides detailed results for system operation, including chronological unit commitment and economic dispatch decisions, nodal power flows, and generator production levels. While the full set of detailed results is available to users through summary Excel files and structured .json outputs, QuESt PCM also offers system-level operational overview plots for visualization and analysis. For example, Figure 2 illustrates system dispatch, generation costs, and interactive locational marginal price (LMP) plots obtained from the RTS-GMLC simulation.
 
 <img src = "Images/dispatch.png" width="386" alt="Results" />  <img src = "Images/cost.png" width="409" alt="Results" /> 
 
@@ -143,6 +143,7 @@ Some outputs of Quest PCM for a 5-day RTS-GMLC simulation (included in the [conf
 
 **Figure 2:** 5-day dispatch, costs, and LMPs of the IEEE RTS-GMLC test case.
 
+### Ancillary Services
 QuESt PCM also emphasizes on modeling the system ancillary services. It enables users to analyze the revenues earned by generators and storage resources from ancillary service participation through summary Excel sheets and visual plots. Figure 3 presents example plots of real-time ancillary service market-clearing results produced by QuESt PCM for the RTS-GMLC system, with storage systems also contributing to operational reserves.
 
 <img src = "Images/regup_plot.png" width="397" alt="Results" />  <img src = "Images/regdown_plot.png" width="397" alt="Results" /> 
@@ -151,7 +152,8 @@ QuESt PCM also emphasizes on modeling the system ancillary services. It enables 
 
 **Figure 3:** Ancillary service market clearing results for RTS-GMLC.
 
-QuESt PCM provides extensive modeling and visualization capabilities for energy storage systems within production cost models. Currently, the tool supports three distinct storage models—generic, battery, and pumped hydro—each with its own set of operational constraints. Figure 4 illustrates the operation of a generic 50 MW, 150 MWh energy storage system over a five-day simulation of the RTS-GMLC system. Figure 5 presents a comparison of the dispatch characteristics of battery energy storage (BESS) and pumped hydro storage (PHS) units of equivalent capacity, replacing the generic storage model and participating in ancillary service markets.
+### Storage Participation in Energy and Ancillary Service Markets 
+QuESt PCM provides extensive modeling and visualization capabilities for energy storage systems within production cost models. Currently, the tool supports three distinct storage models: generic, battery, and pumped hydro. Each storage system is equipped with its own set of operational constraints. Figure 4 illustrates the operation of a generic 50 MW, 150 MWh energy storage system with charging and discharging-only capability over a five-day simulation of the RTS-GMLC system. Figure 5 presents a comparison of the dispatch characteristics of battery energy storage (BESS) and pumped hydro storage (PHS) units of equivalent capacity, replacing the generic storage model and participating in ancillary service markets.
 
 <table>
   <tr>
@@ -170,6 +172,18 @@ QuESt PCM provides extensive modeling and visualization capabilities for energy 
 
 **Figure 5:** Battery and pumped hydro storage dispatch in RTS-GMLC with ancillary service participation.
 
+### Detailed Storage Tech-Specific Modeling
+
+QuESt PCM also provides detailed modeling of technology-specific storage operation. In the current release, tech-specific models for two storage technologies are supported: batteries and pumped hydro. For batteries, QuESt PCM evaluates potential degradation arising from system operation. For example, Figure 6 presents two plots showing battery degradation when participating in energy markets only versus participation in both energy and reserve markets. The degradation models used for this evaluation are based on cyclic degradation data from the [batteryarchive](https://www.batteryarchive.org/index.html). Similarly, for pumped-hydro systems, unit-level control constraints are included, such as generator and pump operation limits, flow dynamics, and reservoir interactions. Figure 7 illustrates an example visualization of pumped-hydro unit operation status from the RTS-GMLC five-day simulation.
+
+<img src = "Images/BESS_degradation_arbitrage.png" width="397" alt="Results" />  <img src = "Images/BESS_degradation_ancillaries.png" width="397" alt="Results" /> 
+
+**Figure 6:** Potential degradation of BESS for different cathode chemistries with charging discharging only (first figure) vs ancillary service participation (second figure).
+
+<img src = "Images/PHS_schedules.png" width="800" alt="Results" />
+
+**Figure 7:** Generator/Pump unit operation schedule of pumped hydro storage in RTS-GMLC.
+
 [Back to Top](#top)
 ## Acknowledgment
 <a id="acknowledgement"></a>
@@ -181,7 +195,7 @@ The QuESt PCM tool is developed and maintained by the [Energy Storage Analytics 
 - Atri Bera
 - Tu Nguyen
 <p>
-  <img src="Images/SNL_Logo.jpg" width="260" alt="SNL"> <img src="Images/DOE_Logo.jpg" width="350" alt="DOE">
+  <img src="Images/SNL_Logo.jpg" width="260" alt="SNL"> <img src="Images/DOE_logo.jpg" width="350" alt="DOE">
 </p>
 
 [Back to Top](#top)

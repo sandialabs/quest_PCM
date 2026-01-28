@@ -226,11 +226,13 @@ def plot_lines(result, plot_dict, plot_name, plotly_enabled = True, png_enabled 
     # --- Plot with matplotlib ---
     if png_enabled:
         fig, ax = plt.subplots(figsize=(12, 6))
-        for bus in result.columns:
+        for col in result.columns:
             if plot_dict["plot_type"] == "step":
-                ax.step(plot_dict["plotter_x_axis"], result[bus], label=f"{bus}")
+                ax.step(plot_dict["plotter_x_axis"], result[col], label=f"{col}")
+            elif plot_dict["plot_type"] == "bar":
+                ax.bar(plot_dict["plotter_x_axis"], result[col], label=f"{col}",width = plot_dict["width_days"], alpha=0.8)
             else:
-                ax.plot(plot_dict["plotter_x_axis"], result[bus], label=f"{bus}")
+                ax.plot(plot_dict["plotter_x_axis"], result[col], label=f"{col}")
         ax.legend(loc="center left",
                     bbox_to_anchor=(1, 0.5), fontsize=15, frameon=False)
         plt.subplots_adjust(right=0.75)
@@ -252,15 +254,24 @@ def plot_lines(result, plot_dict, plot_name, plotly_enabled = True, png_enabled 
     trace_names = []
     trace_idx = 0  
     for col in result.columns:
-        fig.add_trace(go.Scatter(
-            x=plot_dict["plotter_x_axis"], 
-            y=result[col],
-            mode="lines", 
-            name=col,
-            visible=(trace_idx == 0),
-            line_shape='hv' if plot_dict["plot_type"] == "step" else 'linear' , 
-            hovertemplate=f"{col} {plot_dict['ylabel']}: %{{y:.2f}} {plot_dict['unit']}<extra></extra>"
-        ))
+        if plot_dict["plot_type"] == "bar":
+                fig.add_trace(go.Bar(
+                x=plot_dict["plotter_x_axis"],
+                y=result[col],
+                name=col,
+                visible=(trace_idx == 0),
+                hovertemplate=f"{col}: %{{y:.2f}} {plot_dict['unit']}<extra></extra>"
+            ))
+        else:
+            fig.add_trace(go.Scatter(
+                x=plot_dict["plotter_x_axis"], 
+                y=result[col],
+                mode="lines", 
+                name=col,
+                visible=(trace_idx == 0),
+                line_shape='hv' if plot_dict["plot_type"] == "step" else 'linear' , 
+                hovertemplate=f"{col} {plot_dict['ylabel']}: %{{y:.2f}} {plot_dict['unit']}<extra></extra>"
+            ))
         trace_names.append(col)
         trace_idx += 1
     # --- Build dropdown ---
