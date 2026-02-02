@@ -126,23 +126,25 @@ class ResultManager():
         # Work on copies to keep original outputs intact
         DA_res_dict = copy.deepcopy(DA_output_data)
         RT_res_dict = copy.deepcopy(RT_output_data)
-        merged_res_dict = {}
+        merged_res_dict_DA = {}
+        merged_res_dict_RT = {}
         DA_output_json = {}
         RT_output_json = {}
         # Iterate over simulation days present in DA results
         for sim_day in DA_res_dict.keys():
-            current_day_merged = {}
+            current_day_RT_merged = {}
             # Each sim_day in RT_res_dict contains model groups (e.g., different RT models)
             # Merge the .data dict for each group into a single per-day dict
             for model_group in RT_res_dict[sim_day].values():
-                deep_merge_inplace(current_day_merged, model_group.data)
+                deep_merge_inplace(current_day_RT_merged, model_group.data)
             # Use ISO date string as the JSON key
             current_key = sim_day.isoformat()
-            RT_output_json[current_key] = copy.deepcopy(current_day_merged)
+            RT_output_json[current_key] = copy.deepcopy(current_day_RT_merged)
             DA_output_json[current_key] = DA_res_dict[sim_day].data
             # Merge into cumulative dict used for plotting and summaries
-            deep_merge_inplace(merged_res_dict, current_day_merged)
-        return DA_output_json, RT_output_json, merged_res_dict
+            deep_merge_inplace(merged_res_dict_RT, current_day_RT_merged)
+            deep_merge_inplace(merged_res_dict_DA, DA_res_dict[sim_day].data)
+        return DA_output_json, RT_output_json, merged_res_dict_RT, merged_res_dict_DA
 
     def set_subfolders(self, name):
         """
@@ -185,7 +187,7 @@ class ResultManager():
         output_mode = self.result_interval
 
         result_exporter = ResultExporter()
-        _, full_RT_data, _ = self.merge_dicts(self.DA_output_data, self.RT_output_data)
+        _, full_RT_data, _, _ = self.merge_dicts(self.DA_output_data, self.RT_output_data)
         result_exporter.export_excel_file(full_RT_data, self.all_config, self.base_result_directory)
         print("Excel summary file saved to:", self.base_result_directory)
         
@@ -219,7 +221,7 @@ class ResultManager():
             RT_data = {k: self.RT_output_data[k] for k in time_keys}
 
             # Merge DA + RT dicts
-            DA_json_data, RT_json_data, merged_RT_data = self.merge_dicts(DA_data, RT_data)
+            DA_json_data, RT_json_data, merged_RT_data, merged_DA_data = self.merge_dicts(DA_data, RT_data)
 
             # Make subfolder (like "2020-01-Week1" or "2020-01-01")
             if output_mode == "at_once":
@@ -232,7 +234,12 @@ class ResultManager():
             result_exporter.export_json_outputs(self.input_data_ref, current_directory, DA_json_data, RT_json_data)
             
             # Plots
-            plotter = ResultPlotter(merged_RT_data, current_directory, current_start_date, self.RT_resolution, self.plotly_enabled)
+            plotter_DA = ResultPlotter(merged_DA_data, current_directory, current_start_date, 60, self.plotly_enabled, "DA")
+            plotter_DA.plot_dispatch_stackgraphs()
+            plotter_DA.plot_lmp()
+            plotter_DA.plot_reserves()
+
+            plotter = ResultPlotter(merged_RT_data, current_directory, current_start_date, self.RT_resolution, self.plotly_enabled, "RT")
             plotter.plot_dispatch_stackgraphs()
             plotter.plot_costs()
             plotter.plot_lmp()

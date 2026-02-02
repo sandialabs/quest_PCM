@@ -111,7 +111,11 @@ class MarketSimulator:
             self.RT_result_dict[current_day], final_RT_sol = self._simulate_real_time(
                 current_day, RT_timekeys, day, pyomo_DA_sol, md_DA_full, RT_timekeys_set, final_RT_sol, self.data_obj.config.get("run_RTSCED_as")
             )
-            
+
+        # Evaluate degradation for any BESS in the system
+        self.utils.evaluate_degradation(self.RT_model, self.RT_result_dict)
+        pass
+    
     def _simulate_day_ahead(self, current_day, DA_timekeys, day, initializer_model):
         """
         Runs the Day-Ahead simulation for a single day.

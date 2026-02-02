@@ -290,8 +290,8 @@ class ResultExporter:
                     gen_rev_daily += gen_supp_res_daily
 
                 if config.get("Flexible Ramp Up") is not None or config.get("Flexible Ramp Down") is not None:
-                    gen_flex_ramp_up_daily = sum(c("flex_ramp_up_revenue"))
-                    gen_flex_ramp_down_daily = sum(c("flex_ramp_down_revenue"))
+                    gen_flex_ramp_up_daily = sum(c("flexible_ramp_up_revenue"))
+                    gen_flex_ramp_down_daily = sum(c("flexible_ramp_down_revenue"))
                     generator_totals[gen_num]["Flex Ramp Revenue ($)"] += gen_flex_ramp_up_daily + gen_flex_ramp_down_daily
                     gen_rev_daily += gen_flex_ramp_up_daily + gen_flex_ramp_down_daily
 
@@ -403,11 +403,12 @@ class ResultExporter:
         df_storage = pd.DataFrame.from_dict(storage_totals, orient="index")
         df_congestion = pd.DataFrame(congestion_totals)
         df_contingency = pd.DataFrame(contingency_totals)
-        dt = pd.to_datetime(
-                df_contingency["Date"].astype(str) + " " + df_contingency["Time"],
-                format="%Y-%m-%d %H:%M"
-            )
-        df_contingency = df_contingency.loc[dt.sort_values().index]
+        if not df_contingency.empty:
+            dt = pd.to_datetime(
+                    df_contingency["Date"].astype(str) + " " + df_contingency["Time"],
+                    format="%Y-%m-%d %H:%M"
+                )
+            df_contingency = df_contingency.loc[dt.sort_values().index]
 
         with pd.ExcelWriter(os.path.join(output_directory, "simulation_summary.xlsx"), engine="openpyxl") as writer:
             df_daily_summary.to_excel(writer, sheet_name="daily_summary", index=False)

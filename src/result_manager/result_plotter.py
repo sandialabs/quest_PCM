@@ -6,9 +6,9 @@ import src.result_manager.result_utils as utils
 
 class ResultPlotter:
     """
-    High-level plotter for real-time market results.
+    High-level plotter for Market results.
 
-    The class accepts a real-time economic dispatch results dictionary 
+    The class accepts market results dictionary 
     to generate system-level and per-asset plots (dispatch, costs, LMP,
     reserves, storage dispatch/revenue/SOC/cost). Plot generation is
     delegated to the plotting helpers in src.result_manager.result_utils.
@@ -23,13 +23,13 @@ class ResultPlotter:
     plotter_x_axis (DatetimeIndex): Generated time index for plots.
     plot_colors (dict): Mapping of technology/series names to colors.
     """
-    def __init__(self, rt_result_dict, output_directory, start_date, time_resolution, enable_plotly):
+    def __init__(self, rt_result_dict, output_directory, start_date, time_resolution, enable_plotly, current_market):
         """
         Initialize a ResultPlotter.
 
         Parameters
 
-        rt_result_dict (dict): Real-time results returned by the market
+        rt_result_dict (dict): Results returned by the market
         simulation. Expected keys include "elements" and "system".
         output_directory (str): Directory where plot outputs will be written.
         start_date (str|datetime): Timestamp or parseable date string for
@@ -43,6 +43,7 @@ class ResultPlotter:
         self.start_date = start_date
         self.RT_resolution = time_resolution
         self.enable_plotly = enable_plotly
+        self.current_market = current_market
 
         self.gen_dat = self.RT_res_dict["elements"]["generator"]
         self.storage_dat = self.RT_res_dict["elements"]["storage"]
@@ -215,7 +216,7 @@ class ResultPlotter:
         plt_color_dict = {c: self.plot_colors[c] for c in result.columns}
         plt_dict = self.populate_plot_dict(plt_color_dict, "Power (MW)", "MW", "Demand", "Overall Dispatch", "fill")
         
-        self.utils.plot_stackgraphs(result, overall_demand, plt_dict, "dispatch", self.enable_plotly)
+        self.utils.plot_stackgraphs(result, overall_demand, plt_dict, f"dispatch_{self.current_market}", self.enable_plotly)
 
     def plot_costs(self):
         """
@@ -260,11 +261,10 @@ class ResultPlotter:
         plt_dict = self.populate_plot_dict(None, "LMP ($/MWh)", "$", None, "Bus Locational Marginal Prices", "step")
 
         if len(df_lmp.columns) < 10:
-            self.utils.plot_lines(df_lmp, plt_dict, "bus_LMP", self.enable_plotly)
+            self.utils.plot_lines(df_lmp, plt_dict, f"bus_LMP_{self.current_market}", self.enable_plotly)
         else:
-            self.utils.plot_lines(df_lmp, plt_dict, "bus_LMP", self.enable_plotly, png_enabled = False)
-    
-    
+            self.utils.plot_lines(df_lmp, plt_dict, f"bus_LMP_{self.current_market}", plotly_enabled = True, png_enabled = False)
+
     def plot_reserves(self):
         """
         Plot system- and area-level reserve supply stacks and clearing prices.
@@ -302,13 +302,13 @@ class ResultPlotter:
                 plt_color_dict = {c: self.plot_colors[c] for c in result.columns}
                 plt_dict = self.populate_plot_dict(plt_color_dict, "Power (MW)", "MW", "requirement", f"{reserve_type.replace('_requirement', '').replace('_', ' ').title()}", "fill")
                 plt_name = f"{reserve_type.replace('_requirement', '')}"
-                self.utils.plot_stackgraphs(result, reserve_req, plt_dict, f"system_{plt_name}", self.enable_plotly, subdir_name="Ancillary Services")
+                self.utils.plot_stackgraphs(result, reserve_req, plt_dict, f"system_{plt_name}_{self.current_market}", self.enable_plotly, subdir_name=f"Ancillary_Services_{self.current_market}")
 
                 system_clearing_prices[f"system_{plt_name}"] = self.system_dat[f"{plt_name}_price"]["values"]
         if system_clearing_prices:
             df_system_prices = pd.DataFrame(system_clearing_prices)
             plt_dict = self.populate_plot_dict(None, "Clearing price ($/MW)", "$", None, "System Ancillary Service Clearing Prices", "step")
-            self.utils.plot_lines(df_system_prices, plt_dict, "system_AS_clearing_prices", self.enable_plotly, subdir_name="Ancillary Services") 
+            self.utils.plot_lines(df_system_prices, plt_dict, f"system_AS_clearing_prices_{self.current_market}", self.enable_plotly, subdir_name=f"Ancillary_Services_{self.current_market}")
 
         area_clearing_prices = {}       
         for area in self.RT_res_dict["elements"].get("area", {}):
@@ -334,13 +334,13 @@ class ResultPlotter:
                     plt_color_dict = {c: self.plot_colors[c] for c in result.columns}
                     plt_dict = self.populate_plot_dict(plt_color_dict, "Power (MW)", "MW", "requirement", f"Area {area} {reserve_type.replace('_requirement', '').replace('_', ' ').title()}", "fill")
                     plt_name = f"{reserve_type.replace('_requirement', '')}"
-                    self.utils.plot_stackgraphs(result, reserve_req, plt_dict, f"area_{area}_{plt_name}", self.enable_plotly, subdir_name="Ancillary Services")
+                    self.utils.plot_stackgraphs(result, reserve_req, plt_dict, f"area_{area}_{plt_name}_{self.current_market}", self.enable_plotly, subdir_name=f"Ancillary Services_{self.current_market}")
 
                     area_clearing_prices[f"area_{area}_{plt_name}"] = area_dat[f"{plt_name}_price"]["values"]
         if area_clearing_prices:
             df_area_prices = pd.DataFrame(area_clearing_prices)
             plt_dict = self.populate_plot_dict(None, "Clearing price ($/MW)", "$", None, "Area Ancillary Service Clearing Prices", "step")
-            self.utils.plot_lines(df_area_prices, plt_dict, "area_AS_clearing_prices", self.enable_plotly, subdir_name="Ancillary Services") 
+            self.utils.plot_lines(df_area_prices, plt_dict, f"area_AS_clearing_prices_{self.current_market}", self.enable_plotly, subdir_name=f"Ancillary Services_{self.current_market}")
 
     def storage_dispatch_plotter(self, storage_name, input_dict, plt_name, subdirectory_name=""):
         """
@@ -449,6 +449,52 @@ class ResultPlotter:
         plt_dict = self.populate_plot_dict(color_dict, "Operational Cost", "", None, f"{storage_name} Operational Cost", "bar")
         self.utils.plot_stackgraphs(df_cost, pd.Series(dtype= float), plt_dict, plt_name, self.enable_plotly, subdir_name = subdirectory_name)
 
+    def plot_storage_degradation(self, storage_name, input_dict, plt_name, subdirectory_name=""):
+        """
+        Plot battery capacity degradation for a storage asset.
+
+        Extracts the per-chemistry capacity degradation time-series and
+        delegates plotting to the line-plot helper.
+
+        Parameters are the same as storage_dispatch_plotter.
+        """
+        degradation_data = {}
+        for chemistry in ["LMO", "LFP", "NMC", "NCA"]:
+            deg_record = self.extract_records(input_dict, f'{chemistry}', f'capacity_after_degradation_{chemistry}')
+            if deg_record:
+                degradation_data[chemistry] = deg_record[0]['values']
+        
+        df_deg = pd.DataFrame(degradation_data)  # transpose so that rows=time steps
+
+        plt_dict = self.populate_plot_dict(None, "Capacity (MWh)", "MWh", None, f"{storage_name} Potential Cyclic Degradation", "linear")
+        self.utils.plot_lines(df_deg, plt_dict, plt_name, self.enable_plotly, subdir_name = subdirectory_name)
+
+    def plot_PHS_unit_schedule(self, storage_name, input_dict, plt_name, subdirectory_name=""):
+        pass
+        unit_schedules = {}
+        plt_color_dict = {}
+        genmode_dict = input_dict['Unit_GenMode']
+        pumpmode_dict = input_dict['Unit_PumpMode']
+        for u in range(input_dict["num_units"]):
+            genmode_list = genmode_dict[(storage_name,u)]['values']
+            pumpmode_list = pumpmode_dict[(storage_name,u)]['values']
+            
+            unit_schedules[f"{storage_name} Unit {u} Schedule"] = np.array(genmode_list) - np.array(pumpmode_list)
+            current_schedule = {}
+            current_schedule["Gen Mode"] = np.array(genmode_list)
+            current_schedule["Pump Mode"] = -1*np.array(pumpmode_list)
+
+            df_schedule = pd.DataFrame(current_schedule)  # transpose so that rows=time steps
+            plt_color_dict[f"{storage_name} Unit {u} Schedule"] = "#1F77B4"
+    
+            plt_dict = self.populate_plot_dict(None, "Unit Status", "Status", None, f"Unit {u} Status", "bar")
+            plt_name = f"{storage_name}_Unit_{u}_Schedule"
+            self.utils.plot_lines(df_schedule, plt_dict, plt_name, plotly_enabled = False, subdir_name = subdirectory_name)
+        
+        plotly_plot_dict = self.populate_plot_dict(plt_color_dict, "Unit Status", "", None, f"{storage_name} Unit Schedules (+1 for generation mode, -1 for pumping mode, 0 for idle)", "bar")
+        plotly_plot_name = f"{storage_name}_Unit_Schedules"
+        self.utils.plot_lines(pd.DataFrame(unit_schedules), plotly_plot_dict, plotly_plot_name, plotly_enabled = self.enable_plotly, png_enabled = False, subdir_name = subdirectory_name)
+
     def plot_storage_data(self):
         """
         Create all storage-related plots for the system.
@@ -465,6 +511,9 @@ class ResultPlotter:
 
             self.storage_dispatch_plotter(s_name, s_dict, s_name + "_Dispatch", subdirectory_name = s_name)
             self.storage_revenue_plotter(s_name, s_dict,  s_name + "_Revenue", subdirectory_name = s_name)
-            self.storage_soc_plotter(s_name, s_dict, s_name + "_state_of_charge", subdirectory_name = s_name)
-            self.storage_cost_plotter(s_name, s_dict, s_name + "_operational_cost", subdirectory_name = s_name)
-
+            self.storage_soc_plotter(s_name, s_dict, s_name + "_SoC", subdirectory_name = s_name)
+            self.storage_cost_plotter(s_name, s_dict, s_name + "_Cost", subdirectory_name = s_name)
+            if s_dict["storage_type"] == "BESS":
+                self.plot_storage_degradation(s_name, s_dict, s_name + "_Degradation", subdirectory_name = s_name)
+            if s_dict["storage_type"] == "PHS":
+                self.plot_PHS_unit_schedule(s_name, s_dict, s_name + "_Degradation", subdirectory_name = s_name)
