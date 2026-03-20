@@ -71,7 +71,7 @@ Ensure an optimization solver is installed on your machine. For best performance
 
 2. Create a virtual environment (named `pcm_venv`):
     ```bash
-    python -m virtualenv venv
+    python -m virtualenv pcm_venv
     ```
 
 3. Activate the virtual environment:
