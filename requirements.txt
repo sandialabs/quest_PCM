@@ -21,6 +21,7 @@ ply==3.11
 Pygments==2.19.2
 pyomo==6.9.4
 pyparsing==3.2.5
+pyside6==6.10.2
 pytest==9.0.2
 python-dateutil==2.9.0.post0
 pytz==2025.2

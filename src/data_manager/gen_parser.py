@@ -126,7 +126,7 @@ class GenParser:
 
                 if first_lag != min_down:
                     print(
-                        f"DATA ERROR: The first startup lag for thermal generator={gen_id} "
+                        f"DATA Warning: The first startup lag for thermal generator={gen_id} "
                         f"(Lag = {first_lag} hr does not equal the minimum down time {min_down} hr). "
                         f"Setting startup_fuel to [[{min_down}, {cold_heat}]]."
                     )

@@ -16,5 +16,6 @@ simulator = MarketSimulator(input_manager)
 simulator.create_DA_RT_models()
 simulator.simulate_market() 
 
-result_processor = ResultManager(simulator)
+result_path = "Results/"
+result_processor = ResultManager(simulator, result_path)
 result_processor.export_results()

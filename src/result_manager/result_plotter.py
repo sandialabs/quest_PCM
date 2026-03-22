@@ -424,8 +424,13 @@ class ResultPlotter:
         storage_soc = self.extract_records(input_dict, 'State of Charge', 'state_of_charge')
         storage_soc = storage_soc[0]['values']
         
-        df_soc = pd.DataFrame(storage_soc)  # transpose so that rows=time steps
-        df_soc.columns = [storage_name]
+        storage_DA_soc = self.extract_records(input_dict, 'DA State of Charge Requirement', 'RT_SoC_requirement')
+        storage_DA_soc = storage_DA_soc[0]['values'] 
+
+        df_soc = pd.DataFrame({
+            f"{storage_name} RT SoC": storage_soc,
+            f"{storage_name} DA SoC": storage_DA_soc
+        })
 
         plt_dict = self.populate_plot_dict(None, "State of Charge", "", None, f"{storage_name} State of Charge", "linear")
         self.utils.plot_lines(df_soc, plt_dict, plt_name, self.enable_plotly, subdir_name = subdirectory_name)

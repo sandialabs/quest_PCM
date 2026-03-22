@@ -29,7 +29,7 @@ class ResultManager():
     start_date, end_date (date-like): Simulation horizon boundaries.
     base_result_directory (str): Top-level results folder created by the manager.
     """
-    def __init__(self, market_obj):
+    def __init__(self, market_obj, output_path):
         """
         Initialize the ResultManager.
 
@@ -37,10 +37,9 @@ class ResultManager():
 
         market_obj: Object returned by the market simulation which must expose:
         DA_result_dict and RT_result_dict (raw outputs),
-        data_obj (with config, start_date, end_date, folder_path),
-        DA_model (used to obtain input_data_ref).
+        output_path: Base name for results directory.
         The constructor extracts commonly used metadata, resolution and plotting
-        flags, and creates a base results directory via set_base_output_directory.
+        flags, and creates a base timestamp results directory via set_base_output_directory.
         """
         # Raw outputs provided by the market simulator
         self.DA_output_data = market_obj.DA_result_dict
@@ -55,9 +54,9 @@ class ResultManager():
         self.system_name = market_obj.data_obj.folder_path
         self.result_interval = market_obj.data_obj.config["output_interval"]
         self.plotly_enabled = market_obj.data_obj.config["plotly_plots"]
-        self.set_base_output_directory()
+        self.set_base_output_directory(output_path)
         
-    def set_base_output_directory(self):
+    def set_base_output_directory(self, base_folder):
         """
         Create and assign a unique base results directory.
 
@@ -73,7 +72,7 @@ class ResultManager():
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
         # Construct the results path and ensure it exists
-        results_dir = os.path.join("Results", f"{input_name}_{timestamp}")
+        results_dir = os.path.join(base_folder, f"PCM_{input_name}_{timestamp}")
         os.makedirs(results_dir, exist_ok=True)
 
         self.base_result_directory = results_dir

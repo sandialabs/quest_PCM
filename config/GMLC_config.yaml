@@ -26,7 +26,7 @@ fixed_renewable_types: #Renewables whose output capacity is fixed and not dispat
 # "fixed" = Fixed MW value, "percentage" = Demand percentage of system or zone, "timeseries" = user provided data for each period
 # "fixed and "percentage" are reserve values are extracted from "reserves_default_DA.csv and reserves_default_RT.csv" file and "timeseries" are extracted from from reserves_timeseries folder
 System Reserve: percentage
-Regulation Up: fixed 
+Regulation Up: timeseries 
 Regulation Down: timeseries
 Spinning Reserve: timeseries
 NonSpinning Reserve: None

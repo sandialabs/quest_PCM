@@ -6,7 +6,7 @@
 
 # **QuESt PCM**: A Production Cost Modeling Tool with High-Fidelity Models of Energy Storage Systems
 
-Current release version: 1.0.0
+Current release version: 1.1.0
 
 ## Table of Contents
 - [Introduction](#intro)
@@ -69,19 +69,19 @@ Ensure an optimization solver is installed on your machine. For best performance
     python -m pip install virtualenv
     ```
 
-2. Create a virtual environment (named `venv`):
+2. Create a virtual environment (named `pcm_venv`):
     ```bash
-    python -m virtualenv venv
+    python -m virtualenv pcm_venv
     ```
 
 3. Activate the virtual environment:
    - On Windows:
      ```bash
-     .\venv\Scripts\activate
+     .\pcm_venv\Scripts\activate
      ```
    - On macOS/Linux:
      ```
-     source <env_name>/bin/activate
+     source pcm_venv/bin/activate
      ```
 
 ### Cloning the Repository and Installing Dependencies
@@ -99,7 +99,7 @@ Ensure an optimization solver is installed on your machine. For best performance
 
 3. Install Dependencies:
     ```bash
-    python -m pip install -r requirements.txt
+    pip install -e .
     ```
 [Back to Top](#top)
 
@@ -113,12 +113,22 @@ The network, generator, reserve, and storage data are all input as .csv files. T
 ### Configure the Input File
 
 Before running the simulation, configure the input yaml file in [Config](config/) directory with the specific simulation parameters. Open the file in a text editor and adjust the parameters according to your requirements. The guidelines for setting up the config files are present in [config_readme](config/config_readme.md).
-### Run the Program
+### Option 1: Run the Program using Command Line
 
-Use the example script to run the simulation. Before running, update the main_data_path and yaml_path variables in the script to point to your desired system. Then, with your virtual environment activated, execute the script from the command line as follows:
+First, make sure that you are in the main project directory. Then, use the `example_script.py` to run the simulation. Before running, update the main_data_path, yaml_path, and result_path variables in the script to point to your desired system. Then, with your virtual environment activated, execute the script from the command line as follows:
 ```
 python example_script.py
 ```
+### Option 2: Run the Program using GUI
+
+From any directory, with your virtual environment activated, run the command:
+```
+quest_pcm
+```
+When the GUI (shown below) opens, first browse to and select the data directory and YAML file. The YAML file can also be edited directly within the GUI to adjust simulation parameters. Once everything is set, click `Run Simulation`. After the simulation finishes, a new button `Open Results Folder` will appear that links to the results directory for that run.
+
+<img src = "Images/GUI.png" width="800" alt="Results" />
+
 ### Analyze the Results
 
 Simulation results are stored in the [Results](Results/) directory. Separate timestamp folders are generated for each simulation run. Some key results from each simulation run include: system generation dispatch, operation costs, ancillary service allocations, and storage dispatch characteristics. Detailed decription of QuESt PCM outputs and file organization are present in the [output_readme](Results/output_readme.md).
