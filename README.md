@@ -120,11 +120,17 @@ First, make sure that you are in the main project directory. Then, use the `exam
 python example_script.py
 ```
 ### Option 2: Run the Program using GUI
-
 From any directory, with your virtual environment activated, run the command:
-```
+```bash
 quest_pcm
 ```
+
+you can also run the program from the `quest_PCM` directory, with your virtual environment activated, run the command:
+```bash
+python -m pcm
+```
+
+
 When the GUI (shown below) opens, first browse to and select the data directory and YAML file. The YAML file can also be edited directly within the GUI to adjust simulation parameters. Once everything is set, click `Run Simulation`. After the simulation finishes, a new button `Open Results Folder` will appear that links to the results directory for that run.
 
 <img src = "Images/GUI.png" width="800" alt="Results" />
