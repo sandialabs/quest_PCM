@@ -19,7 +19,7 @@ setup(
         "matplotlib==3.10.8",
         "narwhals==2.14.0",
         "networkx==3.6.1",
-        "numpy==1.26.4",
+        "numpy==2.3.5",
         "openpyxl==3.1.5",
         "packaging==25.0",
         "pandas==2.3.3",
@@ -45,7 +45,7 @@ setup(
     python_requires=">=3.11",
     entry_points={
         "console_scripts": [
-            "quest_PCM=pcm.__main__:main",
+            "pcm=pcm.__main__:main",
         ],
     },
 )

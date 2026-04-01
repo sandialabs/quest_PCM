@@ -1,7 +1,9 @@
 import sys
 import logging
 import multiprocessing
+import subprocess
 import os
+import platform
 import yaml
 from datetime import datetime
 from queue import Empty
@@ -411,11 +413,18 @@ class MainWindow(QMainWindow):
 
     # --- Open results folder ---
     def open_results_folder(self):
+        os_name = platform.system()
         if self.results_path and os.path.exists(self.results_path):
-            os.startfile(self.results_path)  # Windows only
+            # os.startfile(self.results_path)  # Windows only
+            if sys.platform == "win32":
+                os.startfile(self.results_path)
+            elif sys.platform == "darwin":  # macOS
+                subprocess.run(["open", self.results_path])
+            else:  # Linux
+                subprocess.run(["xdg-open", self.results_path])
         else:
             self.log("⚠️ Results folder not found!")
-
+        
     # --- Helper log ---
     def log(self, message):
         self.log_box.append(message)
