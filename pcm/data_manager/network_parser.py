@@ -3,7 +3,7 @@
 # -------------------------------------------------------------------------
 
 from egret.model_library.transmission.tx_calc import construct_connection_graph, get_N_minus_1_branches
-import src.data_manager.input_utils as input_utils
+import pcm.data_manager.input_utils as input_utils
 
 class NetworkParser:
     """

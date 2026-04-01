@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 import datetime
-import src.result_manager.result_utils as utils
+import pcm.result_manager.result_utils as utils
 
 class ResultPlotter:
     """
@@ -11,7 +11,7 @@ class ResultPlotter:
     The class accepts market results dictionary 
     to generate system-level and per-asset plots (dispatch, costs, LMP,
     reserves, storage dispatch/revenue/SOC/cost). Plot generation is
-    delegated to the plotting helpers in src.result_manager.result_utils.
+    delegated to the plotting helpers in pcm.result_manager.result_utils.
 
     Attributes
 

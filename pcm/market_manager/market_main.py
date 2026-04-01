@@ -4,8 +4,8 @@ from pyomo.environ import *
 from datetime import datetime
 from egret.data.model_data import ModelData
 from egret.common.log import logger as egret_logger
-from src.market_manager.egret_decorators import apply_egret_decorators
-import src.market_manager.market_utils as MarketUtils
+from pcm.market_manager.egret_decorators import apply_egret_decorators
+import pcm.market_manager.market_utils as MarketUtils
 
 class MarketSimulator:
     """

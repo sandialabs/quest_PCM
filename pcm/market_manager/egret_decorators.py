@@ -108,7 +108,7 @@ def apply_egret_decorators():
     """Apply custom decorators to EGRET."""
     # Replace module
     old_module_name = "egret.model_library.unit_commitment.services"
-    new_module = importlib.import_module("src.storage_manager.storage_main")
+    new_module = importlib.import_module("pcm.storage_manager.storage_main")
     sys.modules[old_module_name] = new_module
     # Apply first decorator
     from egret.common.lazy_ptdf_utils import _binary_var_generator

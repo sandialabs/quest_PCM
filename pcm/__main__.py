@@ -1,7 +1,9 @@
 import sys
 import logging
 import multiprocessing
+import subprocess
 import os
+import platform
 import yaml
 from datetime import datetime
 from queue import Empty
@@ -14,36 +16,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import QTimer, Qt, QDate
 from PySide6.QtGui import QPixmap, QFont, QPalette, QColor
 from PySide6.QtWidgets import QDialog, QMessageBox
+from pcm.worker import run_simulation_process
 
-
-def run_simulation_process(data_path, yaml_path, result_path, log_queue):
-    try:
-        from egret.common.log import logger as egret_logger
-        from .data_manager.data_main import DataManager
-        from .market_manager.market_main import MarketSimulator
-        from .result_manager.result_main import ResultManager
-
-        egret_logger.setLevel(logging.ERROR)
-
-        log_queue.put("Initializing DataManager...")
-        input_manager = DataManager(data_path, yaml_path)
-        log_queue.put("Exporting input JSON...")
-        input_manager.export_input_json()
-        log_queue.put("Creating simulator...")
-        simulator = MarketSimulator(input_manager)
-        log_queue.put("Building DA/RT models...")
-        simulator.create_DA_RT_models()
-        log_queue.put("Running simulation...")
-        simulator.simulate_market()
-        log_queue.put("Processing results...")
-        result_processor = ResultManager(simulator, result_path)
-        result_processor.export_results()
-        log_queue.put("✅ Simulation complete!")
-        log_queue.put(f"__RESULTS__:{result_processor.base_result_directory}")
-    except Exception as e:
-        log_queue.put(f"❌ Error: {e}")
-    finally:
-        log_queue.put("__DONE__")
 
 class ConfigEditorDialog(QDialog):
     """
@@ -439,11 +413,18 @@ class MainWindow(QMainWindow):
 
     # --- Open results folder ---
     def open_results_folder(self):
+        os_name = platform.system()
         if self.results_path and os.path.exists(self.results_path):
-            os.startfile(self.results_path)  # Windows only
+            # os.startfile(self.results_path)  # Windows only
+            if sys.platform == "win32":
+                os.startfile(self.results_path)
+            elif sys.platform == "darwin":  # macOS
+                subprocess.run(["open", self.results_path])
+            else:  # Linux
+                subprocess.run(["xdg-open", self.results_path])
         else:
             self.log("⚠️ Results folder not found!")
-
+        
     # --- Helper log ---
     def log(self, message):
         self.log_box.append(message)

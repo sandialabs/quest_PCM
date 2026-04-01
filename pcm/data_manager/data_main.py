@@ -7,7 +7,7 @@ from .network_parser import NetworkParser
 from .gen_parser import GenParser
 from .reserve_parser import ReserveParser
 from .storage_parser import StorageParser
-import src.data_manager.input_utils as input_utils
+import pcm.data_manager.input_utils as input_utils
 
 class DataManager:
     """

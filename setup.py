@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="quest_pcm",  
+    name="quest_pcm",
     version="1.1.0",
     description="A production cost modeling tool with enhanced storage models.",
     author="Dilip Pandit (dpandit@sandia.gov)",
@@ -45,7 +45,7 @@ setup(
     python_requires=">=3.11",
     entry_points={
         "console_scripts": [
-            "quest_PCM=src.__app__:main", 
+            "pcm=pcm.__main__:main",
         ],
     },
 )
