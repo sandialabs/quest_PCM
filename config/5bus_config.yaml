@@ -1,40 +1,34 @@
-solver: 'cplex' # "cplex", "gurobi", "glpk", "cbc", "appsi_highs"
-baseMVA: 100.0 # Base MVA for the system
-start_date: 07/10/2020 # Start date for your simulation in MM/DD/YYYY format
-end_date: 07/10/2020 # End date for your simulation in MM/DD/YYYY format
-DA_lookahead_periods: 12 #How many hours to lookahead in day-ahead SCUC (in hours
-RT_resolution: 5 # Duration of each Real-Time interval in minutes (e.g., 60 = hourly)
-RT_lookahead_periods: 6 # Number of future intervals (of RT_resolution length). make sure its smaller than DA_lookahead_periods
-run_RTSCED_as: "LP" #Choices are "LP" or "MILP". LP is faster (as all commitment variables from DA are fixed) but MILP gives better commitment decisions
-mipgap: 0.001 #MIP gap for the solver
-branch_contingency: False #impose N-1 transmission security constraints. True or False
-load_timeseries_aggregation_level: area #"node or "area". How your load_timeseries data is arranged columnwise
-thermal_generator_types:
-- CT
-- STEAM
-- CC
-- NUCLEAR
+DA_lookahead_periods: 12
+Flexible Ramp Down: timeseries
+Flexible Ramp Up: timeseries
+NonSpinning Reserve: timeseries
+RT_lookahead_periods: 6
+RT_resolution: 5
+Regulation Down: fixed
+Regulation Up: fixed
+Spinning Reserve: fixed
+Supplemental Reserve: timeseries
+System Reserve: timeseries
+baseMVA: 100.0
+branch_contingency: false
+end_date: 07/10/2020
+fixed_renewable_types:
+- RTPV
+load_timeseries_aggregation_level: area
+mipgap: 0.001
+output_interval: at_once
+plotly_plots: true
 renewable_generator_types:
 - PV
 - RTPV
 - HYDRO
 - WIND
-fixed_renewable_types: #Renewables whose output capacity is fixed and not dispatchable
-- RTPV
-# For operational reserves, select "None", "fixed", "percentage", or "timeseries" data
-# "fixed" = Fixed MW value, "percentage" = Demand percentage of system or zone, "timeseries" = user provided data for each period
-# "fixed and "percentage" are reserve values are extracted from "reserves_default_DA.csv", reserves_default_RT.csv" file and 
-# "timeseries" are extracted from from reserves_timeseries folder
-System Reserve: timeseries 
-Regulation Up: fixed 
-Regulation Down: fixed
-Spinning Reserve: fixed
-NonSpinning Reserve: timeseries
-Supplemental Reserve: timeseries
-Flexible Ramp Up: timeseries
-Flexible Ramp Down: timeseries
-
-storage_AS_participation_level: 4 #set between 0 and 4, how many ancillary services can ESS participate in one time-period
-
-output_interval: "at_once" #how often to generate plots and json output. options are "at_once", "daily", "weekly", "monthly"
-plotly_plots: True #generate html plots for better illustration. takes longer time
+run_RTSCED_as: LP
+solver: gurobi
+start_date: 07/10/2020
+storage_AS_participation_level: 4
+thermal_generator_types:
+- CT
+- CC
+- STEAM
+- NUCLEAR
