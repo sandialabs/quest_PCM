@@ -3,6 +3,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QFormLayout,
+    QGridLayout,
     QPushButton,
     QListView,
     QLineEdit,
@@ -22,6 +23,8 @@ from PySide6.QtWidgets import (
     QLabel,
     QTextEdit,
     QFileDialog,
+    QScrollArea,
+    QSplitter,
 )
 from PySide6.QtCore import QTimer, Qt, QDate
 import yaml
@@ -37,36 +40,67 @@ class ConfigEditorDialog(QDialog):
     def __init__(self, yaml_path, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Edit YAML Config")
-        # Get available screen geometry
-        screen_rect = QApplication.primaryScreen().availableGeometry()
-        screen_width = screen_rect.width()
-        screen_height = screen_rect.height()
 
-        # Resize dialog to 80% of screen width/height
-        self.resize(int(screen_width * 0.6), int(screen_height * 0.6))
-        self.setMinimumSize(600, 400)  # Minimum reasonable size
+        screen_rect = QApplication.primaryScreen().availableGeometry()
+        self.resize(int(screen_rect.width() * 0.7), int(screen_rect.height() * 0.8))
+        self.setMinimumSize(900, 600)
 
         self.yaml_path = yaml_path
         self.config_data = {}
-        self.widgets = {}  # key -> widget
+        self.widgets = {}
 
-        self.main_layout = QVBoxLayout()
-        self.left_form = QFormLayout()
+        self.main_layout = QVBoxLayout(self)
+
+        # --- Left side: QGridLayout ---
+        self.left_grid = QGridLayout()
+        self.left_grid.setColumnStretch(0, 0)  # label column: don't stretch
+        self.left_grid.setColumnStretch(1, 1)  # field column: take remaining space
+        self.left_grid.setColumnMinimumWidth(1, 160)
+        self.left_grid.setHorizontalSpacing(12)
+        self.left_grid.setVerticalSpacing(8)
+        self.left_row = 0  # track current row
+
+        # --- Right side: QFormLayout ---
         self.right_form = QFormLayout()
-        columns_layout = QHBoxLayout()
-        columns_layout.addLayout(self.left_form)
-        columns_layout.addSpacerItem(
-            QSpacerItem(20, 0, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
+        self.right_form.setFieldGrowthPolicy(
+            QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow
         )
-        columns_layout.addLayout(self.right_form)
+        self.right_form.setHorizontalSpacing(12)
+        self.right_form.setVerticalSpacing(8)
 
-        self.main_layout.addLayout(columns_layout)
+        # --- Wrap in containers ---
+        left_container = QWidget()
+        left_container.setLayout(self.left_grid)
+        left_container.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred
+        )
+
+        right_container = QWidget()
+        right_container.setLayout(self.right_form)
+        right_container.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred
+        )
+
+        # --- Splitter ---
+        splitter = QSplitter(Qt.Orientation.Horizontal)
+        splitter.addWidget(left_container)
+        splitter.addWidget(right_container)
+        splitter.setSizes([600, 350])
+        splitter.setChildrenCollapsible(False)
+
+        # --- Scroll area around splitter ---
+        scroll = QScrollArea()
+        scroll.setWidget(splitter)
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+
+        self.main_layout.addWidget(scroll, stretch=1)
 
         self.load_yaml()
         self.build_form()
-        # self.main_layout.addLayout(self.form_layout)
 
-        # Buttons
+        # --- Buttons ---
         btn_layout = QHBoxLayout()
         self.save_btn = QPushButton("Save")
         self.cancel_btn = QPushButton("Cancel")
@@ -76,8 +110,6 @@ class ConfigEditorDialog(QDialog):
         btn_layout.addWidget(self.save_btn)
         btn_layout.addWidget(self.cancel_btn)
         self.main_layout.addLayout(btn_layout)
-
-        self.setLayout(self.main_layout)
 
     # -------------------------------
     # Load YAML
@@ -97,49 +129,71 @@ class ConfigEditorDialog(QDialog):
     def build_form(self):
         cfg = self.config_data
 
-        # -------------------------------
-        # Helper to add widget + help button
-        # -------------------------------
         def add_widget_with_help(label_text, widget, help_text=None, column="left"):
-            layout = QHBoxLayout()
-            layout.addWidget(widget)
-            if help_text:
-                help_btn = QPushButton("?")
-                help_btn.setFixedWidth(20)
-                help_btn.setToolTip(help_text)
-                layout.addWidget(help_btn)
             if column == "left":
-                self.left_form.addRow(f"{label_text}:", layout)
+                label = QLabel(f"{label_text}:")
+                label.setAlignment(
+                    Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+                )
+                if help_text:
+                    help_btn = QPushButton("?")
+                    help_btn.setFixedWidth(20)
+                    help_btn.setToolTip(help_text)
+                    help_btn.pressed.connect(
+                        lambda t=help_text: QMessageBox.information(
+                            self, "Help", t, QMessageBox.StandardButton.Ok
+                        )
+                    )
+                    field_layout = QHBoxLayout()
+                    field_layout.setContentsMargins(0, 0, 0, 0)
+                    field_layout.addWidget(widget)
+                    field_layout.addWidget(help_btn)
+                    field_container = QWidget()
+                    field_container.setLayout(field_layout)
+                    self.left_grid.addWidget(label, self.left_row, 0)
+                    self.left_grid.addWidget(field_container, self.left_row, 1)
+                else:
+                    self.left_grid.addWidget(label, self.left_row, 0)
+                    self.left_grid.addWidget(widget, self.left_row, 1)
+                self.left_row += 1
             else:
-                self.right_form.addRow(f"{label_text}:", layout)
+                field_layout = QHBoxLayout()
+                field_layout.setContentsMargins(0, 0, 0, 0)
+                field_layout.addWidget(widget)
+                if help_text:
+                    help_btn = QPushButton("?")
+                    help_btn.setFixedWidth(20)
+                    help_btn.setToolTip(help_text)
+                    help_btn.pressed.connect(
+                        lambda t=help_text: QMessageBox.information(
+                            self, "Help", t, QMessageBox.StandardButton.Ok
+                        )
+                    )
+                    field_layout.addWidget(help_btn)
+                field_container = QWidget()
+                field_container.setLayout(field_layout)
+                self.right_form.addRow(f"{label_text}:", field_container)
 
-        # -------------------------------
-        # Dropdowns
-        # -------------------------------
         def add_dropdown(key, options, help_text=None, column=None):
             combo = QComboBox()
             combo.addItems(options)
             combo.setCurrentText(str(cfg.get(key, options[0])))
+            combo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
             self.widgets[key] = combo
             add_widget_with_help(key, combo, help_text, column)
 
-        # -------------------------------
-        # Booleans
-        # -------------------------------
         def add_checkbox(key, help_text=None, column=None):
             cb = QCheckBox()
             cb.setChecked(bool(cfg.get(key, False)))
             self.widgets[key] = cb
             add_widget_with_help(key, cb, help_text, column)
 
-        # -------------------------------
-        # Numeric
-        # -------------------------------
         def add_float(key, default=0.0, help_text=None, column=None):
             spin = QDoubleSpinBox()
             spin.setRange(-1e9, 1e9)
             spin.setDecimals(6)
             spin.setValue(float(cfg.get(key, default)))
+            spin.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
             self.widgets[key] = spin
             add_widget_with_help(key, spin, help_text, column)
 
@@ -156,15 +210,16 @@ class ConfigEditorDialog(QDialog):
             spin.setRange(min_val, max_val)
             spin.setValue(int(cfg.get(key, default)))
             spin.setSingleStep(step)
+            spin.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
             self.widgets[key] = spin
             add_widget_with_help(key, spin, help_text, column)
 
-        # -------------------------------
-        # Dates
-        # -------------------------------
         def add_date(key, help_text=None, column=None):
             date_edit = QDateEdit()
             date_edit.setCalendarPopup(True)
+            date_edit.setSizePolicy(
+                QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+            )
             val = cfg.get(key, "01/01/2020")
             try:
                 dt = datetime.strptime(val, "%m/%d/%Y")
@@ -174,34 +229,23 @@ class ConfigEditorDialog(QDialog):
             self.widgets[key] = date_edit
             add_widget_with_help(key, date_edit, help_text, column)
 
-        # -------------------------------
-        # Lists (multi-select)
-        # -------------------------------
         def add_list(key, items_list=None, help_text=None, column=None):
             lst_widget = QListWidget()
-            lst_widget.setSelectionMode(
-                QListWidget.MultiSelection
-            )  # allow multiple selection
-            lst_widget.setMaximumHeight(150)  # adjust as needed
-            lst_widget.setMinimumHeight(80)  # optional
-            lst_widget.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-            # Determine items to display
+            lst_widget.setSelectionMode(QListWidget.SelectionMode.MultiSelection)
+            lst_widget.setMaximumHeight(150)
+            lst_widget.setMinimumHeight(80)
+            lst_widget.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
             items = items_list if items_list is not None else cfg.get(key, [])
             if not isinstance(items, list):
                 items = []
-
-            # Pre-selected items from YAML
             selected_items = set(
                 cfg.get(key, []) if isinstance(cfg.get(key, []), list) else []
             )
-
-            # Add items to widget and pre-select if in YAML
             for v in items:
                 item = QListWidgetItem(v)
                 lst_widget.addItem(item)
                 if v in selected_items:
-                    item.setSelected(True)  # select the item
-
+                    item.setSelected(True)
             self.widgets[key] = lst_widget
             add_widget_with_help(key, lst_widget, help_text, column)
 
@@ -251,7 +295,7 @@ class ConfigEditorDialog(QDialog):
         add_dropdown(
             "run_RTSCED_as",
             ["LP", "MILP"],
-            help_text="LP is faster (as all commitment variables from DA are fixed) but MILP gives better commitment decisions (can schedule fast start generators)",
+            help_text="LP is faster but MILP gives better commitment decisions",
             column="left",
         )
         add_dropdown(
@@ -265,7 +309,7 @@ class ConfigEditorDialog(QDialog):
             4,
             0,
             4,
-            help_text="how many ancillary services can ESS participate in one time-period",
+            help_text="How many ancillary services can ESS participate in one time-period",
             column="left",
         )
         add_checkbox(
@@ -273,6 +317,7 @@ class ConfigEditorDialog(QDialog):
             help_text="Enable N-1 transmission security constraints",
             column="left",
         )
+
         add_list(
             "thermal_generator_types",
             items_list=["CT", "CC", "STEAM", "NUCLEAR"],
@@ -291,9 +336,7 @@ class ConfigEditorDialog(QDialog):
             help_text="Select all fixed-output renewable unit types in gen.csv file",
             column="right",
         )
-        # -------------------------------
-        # Reserves (dropdowns)
-        # -------------------------------
+
         reserve_options = ["None", "fixed", "percentage", "timeseries"]
         reserve_keys = [
             "System Reserve",
@@ -309,19 +352,19 @@ class ConfigEditorDialog(QDialog):
             add_dropdown(
                 key,
                 reserve_options,
-                help_text="fixed and percentage are are extracted from reserves_default_DA.csv and reserves_default_RT.csv file and timeseries are extracted from reserves_timeseries folder",
+                help_text="fixed and percentage are extracted from reserves_default_DA.csv and reserves_default_RT.csv, timeseries from reserves_timeseries folder",
                 column="left",
             )
 
         add_checkbox(
             "plotly_plots",
-            help_text="generate html plots for better illustration (takes longer time)",
+            help_text="Generate html plots for better illustration (takes longer time)",
             column="right",
         )
         add_dropdown(
             "output_interval",
             ["at_once", "daily", "weekly", "monthly"],
-            help_text="how often to generate plots and json output",
+            help_text="How often to generate plots and json output",
             column="right",
         )
 
@@ -345,7 +388,6 @@ class ConfigEditorDialog(QDialog):
                 new_cfg[key] = [item.text() for item in widget.selectedItems()]
             else:
                 new_cfg[key] = str(widget.text())
-        # Validate YAML before saving
         try:
             yaml.safe_load(yaml.dump(new_cfg))
         except Exception as e:

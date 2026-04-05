@@ -53,15 +53,15 @@ class MainWindow(QMainWindow):
             os.path.join(self.BASE_DIR, "Images", "PCM_logo.png")
         )  # your logo file
         if not pixmap.isNull():
-            pixmap = pixmap.scaledToWidth(250, Qt.SmoothTransformation)
+            pixmap = pixmap.scaledToWidth(250, Qt.TransformationMode.SmoothTransformation)
             logo_label.setPixmap(pixmap)
-            logo_label.setAlignment(Qt.AlignCenter)
+            logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(logo_label)
         # --- Description ---
         desc_label = QLabel(
             "Production Cost Modeling tool with High-Fidelity Energy Storage Models"
         )
-        desc_label.setAlignment(Qt.AlignCenter)
+        desc_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         desc_label.setWordWrap(True)
         layout.addWidget(desc_label)
         # --- Increase font size ---
@@ -106,29 +106,29 @@ class MainWindow(QMainWindow):
         # --- Images side by side ---
         images_layout = QHBoxLayout()
         images_layout.setSpacing(20)  # space between images
-        images_layout.setAlignment(Qt.AlignCenter)  # center both images
+        images_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)  # center both images
         # Image A
         img1_label = QLabel()
         pix1 = QPixmap(os.path.join(self.BASE_DIR, "Images/SNL_Logo.jpg"))
         if not pix1.isNull():
-            pix1 = pix1.scaledToWidth(150, Qt.SmoothTransformation)
+            pix1 = pix1.scaledToWidth(150, Qt.TransformationMode.SmoothTransformation)
             img1_label.setPixmap(pix1)
-            img1_label.setAlignment(Qt.AlignCenter)
+            img1_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         images_layout.addWidget(img1_label)
         # Image B
         img2_label = QLabel()
         pix2 = QPixmap(os.path.join(self.BASE_DIR, "Images/DOE_Logo.jpg"))
         if not pix2.isNull():
-            pix2 = pix2.scaledToWidth(150, Qt.SmoothTransformation)
+            pix2 = pix2.scaledToWidth(150, Qt.TransformationMode.SmoothTransformation)
             img2_label.setPixmap(pix2)
-            img2_label.setAlignment(Qt.AlignCenter)
+            img2_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         images_layout.addWidget(img2_label)
         footer_layout.addLayout(images_layout)
         # Acknowledgment label
         ack_label = QLabel(
             "This material is based upon work supported by the U.S. Department of Energy, Office of Electricity (OE), Energy Storage Division."
         )
-        ack_label.setAlignment(Qt.AlignCenter)
+        ack_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         font = QFont()
         font.setPointSize(10)  # small font
         ack_label.setFont(font)
@@ -156,7 +156,7 @@ class MainWindow(QMainWindow):
             self,
             "Select Data Folder",
             os.path.join(self.BASE_DIR, "Data"),
-            QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks,
+            QFileDialog.Option.ShowDirsOnly | QFileDialog.Option.DontResolveSymlinks,
         )
         if folder:
             self.data_input.setText(folder)
