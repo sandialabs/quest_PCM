@@ -53,13 +53,16 @@ class NetworkParser:
             raise ValueError("bus.csv file must be present in the data folder.")
 
         for idx, row in bus_df.iterrows():
-            bus_type = str(row.get("Bus Type"))
+            bus_type = str(row.get("Bus Type", "PV"))
             bus_name = str(row.get("Bus Name"))
-            bus_id = str(row.get("Bus ID"))
+            bus_id = str(row.get("Bus ID", row.get("Bus No.")))
             base_kv = float(row.get("BaseKV", 100))
-            area = str(row.get("Area"))
             zone = str(row.get("Zone"))
-            mw_load = float(row.get("MW Load"))
+            if row.get("Area"):
+                area = str(row.get("Area"))
+            else:
+                area = zone
+            mw_load = float(row.get("MW Load", 0))
             if bus_id:
                 self.bus_dict[bus_id] = {
                     "matpower_bustype": bus_type,
@@ -99,11 +102,11 @@ class NetworkParser:
             resistance = float(row.get("R", 0.0))
             reactance = float(row.get("X", 0.0))
             susceptance = float(row.get("B", 0.0))
-            rating_long_term = float(row.get("Cont Rating", 0.0))
-            rating_short_term = float(row.get("LTE Rating", 0.0))
-            rating_emergency = float(row.get("STE Rating", 0.0))
+            rating_long_term = float(row.get("Cont Rating", row.get("Rating", 0.0)))
+            rating_short_term = float(row.get("LTE Rating", 1.1*rating_long_term))
+            rating_emergency = float(row.get("STE Rating", 1.25*rating_short_term))
             in_service = bool(row.get("In Service", 1))
-            name = str(row.get("Line ID"))
+            name = str(row.get("Line ID", row.get("Branch ID")))
 
             self.branch_dict[name] = {
                 "from_bus": from_bus,
@@ -119,7 +122,7 @@ class NetworkParser:
                 "angle_diff_max": 180.0
             }
 
-            tr_ratio_any = float(row.get("Tr Ratio"))
+            tr_ratio_any = float(row.get("Tr Ratio", 0))
             if tr_ratio_any != 0:
                 self.branch_dict[name]["branch_type"] = "transformer"
                 self.branch_dict[name]["transformer_tap_ratio"] = tr_ratio_any
@@ -174,7 +177,7 @@ class NetworkParser:
             raise ValueError("Bus data must be parsed first")
         
         simulate_DA_only = self.config.get("simulate_DA_only", False)
-        df_da = self.data_df.get("load_timeseries_DA")
+        df_da = self.data_df.get("load_timeseries_DA", self.data_df.get("load"))
         if df_da is None:
             raise ValueError("Missing DA load timeseries data.")
         
@@ -190,27 +193,27 @@ class NetworkParser:
         agg_level = self.config["load_timeseries_aggregation_level"]
 
         for bus_id, bus in buses.items():
+            
             base_load = bus["mw_load"]
-            if base_load <= 0:
-                continue
-
             # Determine aggregation region and total load
             if agg_level == "node":
-                region = bus_id
-                total_load = base_load
+                region = bus['bus_name']
+                if region not in df_da:
+                    continue
+                scale = 1
             elif agg_level == "area":
                 region = bus["area"]
                 total_load = sum(b["mw_load"] for b in buses.values() if b["area"] == region)
+                scale = base_load / total_load
             elif agg_level == "zone":
                 region = bus["zone"]
                 total_load = sum(b["mw_load"] for b in buses.values() if b["zone"] == region)
+                scale = base_load / total_load
             else:
                 raise ValueError("Invalid load aggregation level. Choose 'node', 'area', or 'zone'.")
 
             if region not in df_da.columns:
                 raise KeyError(f"Region '{region}' not found in DA timeseries data.")
-
-            scale = base_load / total_load
 
             self.DA_load_dict[bus_id] = {
                 "bus": bus_id,

@@ -25,10 +25,9 @@ class StorageParser:
         """
         self.config = config
         self.data_df = data_df
-        self.storage_dict = {}
         self.static_storage_dict = {}
 
-    def parse_storage(self, bus_dict):
+    def parse_storage(self, bus_dict, time_keys):
         """
         Parse storage data from generic, battery, and pumped hydro storage CSVs.
 
@@ -42,7 +41,7 @@ class StorageParser:
 
         Args:
             bus_dict (dict): Dictionary of bus attributes keyed by bus ID.
-
+            time_keys: DA or RT timekeys for time-varing storage capacities.
         Raises:
             ValueError: If required storage CSV files are missing.
 
@@ -53,11 +52,12 @@ class StorageParser:
         # ---------------------------------------------------------
         # Parse Generic Storage (GESS)
         # ---------------------------------------------------------
+        storage_dict = {}
         df_GESS = self.data_df.get("generic_storage")
         if df_GESS is not None:
             for _, row in df_GESS.iterrows():
                 storage_id = str(row.get("Storage ID"))
-                self.storage_dict[storage_id] = {
+                storage_dict[storage_id] = {
                     "storage_type": "Generic",
                     "bus": str(row.get("Bus ID")),
                     "fuel": "Storage",
@@ -85,31 +85,45 @@ class StorageParser:
         # ---------------------------------------------------------
         # Parse Battery Energy Storage Systems (BESS)
         # ---------------------------------------------------------
-        df_BESS = self.data_df.get("battery_storage")
+        df_BESS = self.data_df.get("battery_storage", self.data_df.get("storage"))
         if df_BESS is not None:
             for _, row in df_BESS.iterrows():
-                storage_id = str(row.get("Storage ID"))
-                self.storage_dict[storage_id] = {
+                storage_id = str(row.get("Storage ID", row.get("Name")))
+                storage_dict[storage_id] = {
                     "storage_type": "BESS",
-                    "bus": str(row.get("Bus ID")),
+                    "bus": str(row.get("Bus ID", row.get("Bus No."))),
                     "fuel": "Storage",
                     "category": "BESS",
-                    "area": bus_dict[str(row.get("Bus ID"))]["area"],
-                    "zone": bus_dict[str(row.get("Bus ID"))]["zone"],
+                    "area": bus_dict[str(row.get("Bus ID", row.get("Bus No.")))]["area"],
+                    "zone": bus_dict[str(row.get("Bus ID", row.get("Bus No.")))]["zone"],
                     "in_service": bool(row.get("In Service", True)),
-                    "power_rating": float(row.get("Rated Power MW")),
-                    "energy_capacity": float(row.get("Rated Capacity MWh")),
-                    "retention_rate_60min": float(row.get("Capacity Retention Rate")),
-                    "conversion_efficiency": float(row.get("Conversion Efficiency")),
-                    "discharge_cost": float(row.get("Battery Discharging Cost $/MWh")),
-                    "initial_state_of_charge": float(row.get("Initial SoC")),
-                    "minimum_state_of_charge": float(row.get("Minimum SoC")),
-                    "maximum_state_of_charge": float(row.get("Maximum SoC")),
+                    "power_rating": float(row.get("Rated Power MW", row.get("Pmax"))),
+                    "energy_capacity": float(row.get("Rated Capacity MWh",row.get("Pmax")*row.get("Duration"))),
+                    "retention_rate_60min": float(row.get("Capacity Retention Rate", 1.0)),
+                    "conversion_efficiency": float(row.get("Conversion Efficiency", row.get("Efficiency"))),
+                    "discharge_cost": float(row.get("Battery Discharging Cost $/MWh", row.get("Discharge Cost"))),
+                    "initial_state_of_charge": float(row.get("Initial SoC",0.5)),
+                    "minimum_state_of_charge": float(row.get("Minimum SoC", row.get("min_SOC"))),
+                    "maximum_state_of_charge": float(row.get("Maximum SoC", row.get("max_SOC"))),
+                    "initial_pmax": float(row.get("Rated Power MW", row.get("Pmax"))),
                     "end_state_of_charge": float(row.get("End of day SoC", 0.5)),
                     "ramp_up_input_60min": 1e20,
                     "ramp_down_input_60min": 1e20,
                     "ramp_up_output_60min": 1e20,
                     "ramp_down_output_60min": 1e20,
+                }
+                temp_dict =  storage_dict[storage_id]
+                temp_dict["ess_smax"] = {
+                    "data_type": "time_series",
+                    "values": [temp_dict["energy_capacity"]*temp_dict["maximum_state_of_charge"]] * len(time_keys)
+                }
+                temp_dict["ess_smin"] = {
+                    "data_type": "time_series",
+                    "values": [temp_dict["energy_capacity"]*temp_dict["minimum_state_of_charge"]] * len(time_keys)
+                }
+                storage_dict[storage_id]["ess_pmax"] = {
+                    "data_type": "time_series",
+                    "values": [temp_dict["power_rating"]] * len(time_keys)
                 }
         # ---------------------------------------------------------
         # Parse Pumped Hydro Storage (PHS)
@@ -118,7 +132,7 @@ class StorageParser:
         if df_PHS is not None:
             for _, row in df_PHS.iterrows():
                 storage_id = str(row.get("Storage ID"))
-                self.storage_dict[storage_id] = {
+                storage_dict[storage_id] = {
                     "storage_type": "PHS",
                     "bus": str(row.get("Bus ID")),
                     "fuel": "Storage",
@@ -166,3 +180,5 @@ class StorageParser:
             self.static_storage_dict["storage_AS_stacking_level"] = self.config["storage_AS_participation_level"]
         else:
             self.static_storage_dict["storage_AS_stacking_level"] = 0
+
+        return storage_dict

@@ -89,7 +89,7 @@ class StorageVars():
         model = self.opt_model
 
         def power_output_storage_bounds_rule(m, s, t):
-            return (0, m.storage_power[s])
+            return (0, m.BESS_Pmax[s, t])
 
         # Power charge/discharge variables
         model.PowerChargeBESS = Var(model.BESS_Storage, model.TimePeriods, within=NonNegativeReals, bounds=power_output_storage_bounds_rule)

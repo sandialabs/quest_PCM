@@ -86,13 +86,13 @@ class StorageParams():
         model.RegUP_efficiency = Param(
             model.TimePeriods, 
             within=PercentFraction,                    
-            default=0.08,
+            default=0.0,
             initialize = dict() if value(model.current_market) == "DA" else self.TimeMapper(self.storage_common_attrs.get('regulation_up_deployed'))
         )
         model.RegDOWN_efficiency = Param(
             model.TimePeriods, 
             within=PercentFraction,
-            default=0.17,
+            default=0.0,
             initialize = dict() if value(model.current_market) == "DA" else self.TimeMapper(self.storage_common_attrs.get('regulation_down_deployed'))
         )
         model.SP_selector = Param(
@@ -139,12 +139,50 @@ class StorageParams():
         """
         model = self.opt_model
         
-        model.storage_power = Param(model.BESS_Storage, within=NonNegativeReals, default=0.0,
-                                   initialize={k: v / self.baseMVA_val for k, v in self.storage_attrs.get('power_rating', {}).items()})
+        model.BESS_Pmax = Param(
+            model.BESS_Storage,
+            model.TimePeriods,
+            within=NonNegativeReals,
+            default=0.0,
+            initialize={
+                k: v / self.baseMVA_val
+                for k, v in self.TimeMapper(
+                    self.storage_attrs.get("ess_pmax")
+                ).items()
+            }
+        )
+        
+        model.BESS_Smax = Param(
+            model.BESS_Storage,
+            model.TimePeriods,
+            within=NonNegativeReals,
+            default=0.0,
+            initialize={
+                k: v / self.baseMVA_val
+                for k, v in self.TimeMapper(
+                    self.storage_attrs.get("ess_smax")
+                ).items()
+            }
+        )
+
+        model.BESS_Smin = Param(
+            model.BESS_Storage,
+            model.TimePeriods,
+            within=NonNegativeReals,
+            default=0.0,
+            initialize={
+                k: v / self.baseMVA_val
+                for k, v in self.TimeMapper(
+                    self.storage_attrs.get("ess_smin")
+                ).items()
+            }
+        )
+        model.BESS_initial_Pmax = Param(model.BESS_Storage, within=NonNegativeReals,
+                                           initialize={k: v / self.baseMVA_val for k, v in self.storage_attrs.get('initial_pmax', {}).items()})
         model.ConversionEfficiency = Param(model.BESS_Storage, within=PercentFraction,
                                            default=0.85,
                                            initialize=self.storage_attrs.get('conversion_efficiency'))
-
+        
     ##################################
     # PHS Parameters
     ##################################   

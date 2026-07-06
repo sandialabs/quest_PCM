@@ -16,12 +16,39 @@ def filter_data_timesteps(time_setup, df_DA, df_RT, cumsum_cols=None):
         tuple: (filtered_df_DA, filtered_df_RT) - Filtered DataFrames for DA and RT.
     """
     cumsum_cols = cumsum_cols or []
+
+    def prepare_dataframe(df):
+        if df is None:
+            return None
+        df = df.copy()
+        # Format 1: Year/Month/Day
+        if {"Year", "Month", "Day"}.issubset(df.columns):
+            df["date"] = pd.to_datetime(df[["Year", "Month", "Day"]])
+        # Format 2: datetime column
+        elif "datetime" in df.columns:
+            df["datetime"] = pd.to_datetime(df["datetime"])
+            df["date"] = df["datetime"].dt.normalize()
+            if "Period" not in df.columns:
+                # Hourly periods: 1-24
+                df["Period"] = df["datetime"].dt.hour + 1
+        elif "DateTime" in df.columns:
+            df["DateTime"] = pd.to_datetime(df["DateTime"])
+            df["date"] = df["DateTime"].dt.normalize()
+            if "Period" not in df.columns:
+                df["Period"] = df["DateTime"].dt.hour + 1
+        else:
+            raise ValueError(
+                "DataFrame must contain either "
+                "'Year', 'Month', 'Day' or a 'datetime'/'DateTime' column."
+            )
+        return df
+    
     filtered_df_DA = None
     filtered_df_RT = None
 
     # ---- Day-Ahead (simple filtering) ----
     if df_DA is not None:
-        df_DA['date'] = pd.to_datetime(df_DA[['Year','Month','Day']])
+        df_DA = prepare_dataframe(df_DA)
         filtered_df_DA = df_DA[
             (df_DA['date'] >= time_setup['start_date']) &
             (df_DA['date'] <= time_setup['end_date']) &
@@ -30,7 +57,7 @@ def filter_data_timesteps(time_setup, df_DA, df_RT, cumsum_cols=None):
 
     # ---- Real-Time (with cumsum behavior) ----
     if df_RT is not None:
-        df_RT['date'] = pd.to_datetime(df_RT[['Year','Month','Day']])
+        df_RT = prepare_dataframe(df_RT)
         df_rt_filt = df_RT[
             (df_RT['date'] >= time_setup['start_date']) &
             (df_RT['date'] <= time_setup['end_date'])

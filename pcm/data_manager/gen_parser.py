@@ -5,6 +5,7 @@
 import pandas as pd
 import copy as copy
 import pcm.data_manager.input_utils as input_utils
+import warnings 
 
 class GenParser:
     """
@@ -57,15 +58,15 @@ class GenParser:
             if row["Type"] != "Thermal":
                 continue
 
-            gen_id = str(row.get("GEN UID"))
-            pmax = float(row["PMax MW"])
-            pmin = float(row["PMin MW"])
+            gen_id = str(row.get("GEN UID", row.get("Gen Name")))
+            pmax = float(row.get("PMax MW", row.get("Max Cap")))
+            pmin = float(row.get("PMin MW", row.get("Min Cap")))
             
             generator_dict[gen_id] = {
                 "generator_type": "thermal",
-                "bus": str(row.get("Bus ID")),
-                "area": bus_dict[str(row.get("Bus ID"))]["area"],
-                "zone": bus_dict[str(row.get("Bus ID"))]["zone"],
+                "bus": str(row.get("Bus ID", row.get("Bus No."))),
+                "area": bus_dict[str(row.get("Bus ID", row.get("Bus No.")))]["area"],
+                "zone": bus_dict[str(row.get("Bus ID", row.get("Bus No.")))]["zone"],
                 "fuel": str(row.get("Fuel")),
                 "category": str(row.get("Category")),
                 "in_service": bool(row.get("In Service",True)),
@@ -150,12 +151,13 @@ class GenParser:
                 Helper to evaluate piecewise fuel costs for generator.
                 """
                 production_fuel = []
+                pmax = float(row.get("PMax MW", row.get("Max Cap")))
                 for idx, (power_col, heat_col) in enumerate(production_fuel_columns):
                     if power_col == "Output_pct_0":
-                        power_component = current_gen_df[power_col] * current_gen_df["PMax MW"]
+                        power_component = current_gen_df[power_col] * pmax
                         fuel_component = current_gen_df[heat_col] / 1e3 * power_component
                     else:
-                        power_component = current_gen_df[power_col] * current_gen_df["PMax MW"]
+                        power_component = current_gen_df[power_col] * pmax
                         fuel_component = production_fuel[idx-1][1] + current_gen_df[heat_col] / 1e3  * (power_component-production_fuel[idx-1][0])
                     production_fuel.append([float(power_component), float(fuel_component)])
                 return production_fuel
@@ -184,12 +186,18 @@ class GenParser:
         df_da = self.data_df.get("renewable_timeseries_DA")
         
         if df_da is None:
-            raise ValueError("Missing DA renewable time_series data.")
+            warnings.warn(
+                "DA renewable_timeseries CSV not found. Using each renewable generator's 'PMax MW' as a constant p_max profile.",
+                UserWarning,
+            )
 
         if not simulate_DA_only:
             df_rt = self.data_df.get("renewable_timeseries_RT", None)
             if df_rt is None:
-                raise ValueError("Missing RT renewable time_series data.")
+                warnings.warn(
+                    "RT renewable_timeseries CSV not found. Using each renewable generator's 'PMax MW' as a constant p_max profile.",
+                    UserWarning,
+                )
             df_da, df_rt = self.utils.filter_data_timesteps(time_settings, df_da, df_rt)
         else:
             df_da, df_rt = self.utils.filter_data_timesteps(time_settings, df_da, None)
@@ -202,21 +210,28 @@ class GenParser:
             if row["Type"] != "Renewable" and row["Type"] != "Fixed Renewable":
                 continue
 
-            gid = str(row.get("GEN UID"))
-            bus = str(row.get("Bus ID"))
-            area = bus_dict[str(row.get("Bus ID"))]["area"]
-            zone = bus_dict[str(row.get("Bus ID"))]["zone"]
+            gid = str(row.get("GEN UID", row.get("Gen Name")))
+            bus = str(row.get("Bus ID", row.get("Bus No.")))
+            area = bus_dict[str(row.get("Bus ID", row.get("Bus No.")))]["area"]
+            zone = bus_dict[str(row.get("Bus ID", row.get("Bus No.")))]["zone"]
             category = str(row.get("Category"))
+            base_pmax = float(row.get("PMax MW",  row.get("Max Cap")))
             in_srv = bool(row.get("In Service", True))
             fuel = str(row.get("Fuel"))
             is_nd = row["Type"] == "Fixed Renewable"
 
             # Always do DA
-            ts_pairs = [(DA_dict, df_da)]
+            ts_pairs = [(DA_dict, df_da, False)]
             # Add RT only if available
-            if df_rt is not None and not simulate_DA_only:
-                ts_pairs.append((RT_dict, df_rt))
-            for ts_dict, df in ts_pairs:
+            if not simulate_DA_only:
+                ts_pairs.append((RT_dict, df_rt, True))
+            for ts_dict, df, is_rt in ts_pairs:
+                if df is not None and gid in df.columns:
+                    pmax_values = df[gid].tolist()
+                else:
+                    pmax_values = [base_pmax] * (
+                            len(time_settings["RT_timekeys"]) if is_rt else len(time_settings["DA_timekeys"]))
+                    
                 ts_dict[gid] = {
                     "bus": bus,
                     "area": area,
@@ -225,12 +240,12 @@ class GenParser:
                     "fuel": fuel,
                     "category": category,
                     "generator_type": "renewable",
-                    "p_max": {"data_type": "time_series", "values": df[gid].tolist()}
+                    "p_max": {"data_type": "time_series", "values": pmax_values}
                 }
                 ts_dict[gid]["p_min"] = (
                     copy.copy(ts_dict[gid]["p_max"]) if is_nd else {
                         "data_type": "time_series",
-                        "values": [0.0] * len(df[gid])
+                        "values": [0.0] * len(pmax_values)
                     }
                 )
 # -------------------------------------------------------------------------

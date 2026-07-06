@@ -34,14 +34,14 @@ class StorageConstraints():
 
         # storage end-point constraints  
         def storage_end_point_soc_rule(m, s, t):
-            # storage s, last time period
+           
             if m.model_data.data["current_market"] == "DA":
-                m.soc_slack[s, t].fix(0.0)
                 if t == 24:
-                    return m.SocStorage[s, t] >= m.EndPointSocStorage[s]  # Enforce SoC[24] ≥ SoC[0]
+                    return m.SocStorage[s, t] + m.soc_slack[s, t] >= m.EndPointSocStorage[s]  # Enforce SoC[24] ≥ SoC[0]
                 elif t == value(m.NumTimePeriods):  # Assuming this is 36
-                    return m.SocStorage[s, t] >= m.EndPointSocStorage[s]  # m.SocStorage[s, 24]      # Enforce SoC[36] ≥ SoC[24]
+                    return m.SocStorage[s, t] + m.soc_slack[s, t] >= m.EndPointSocStorage[s]  # m.SocStorage[s, 24]      # Enforce SoC[36] ≥ SoC[24]
                 else:
+                    m.soc_slack[s, t].fix(0.0)
                     return Constraint.Skip
             else:
                 if t == value(m.NumTimePeriods):
@@ -176,7 +176,7 @@ class StorageConstraints():
         def create_AS_constraints(model, bin_var, output_var, suffix):
             model.add_component(f"EnforceBESS{suffix}PartB", Constraint(
                 model.BESS_Storage, model.TimePeriods,
-                rule=lambda m, s, t: output_var[s, t] <= model.storage_power[s] * bin_var[s, t]
+                rule=lambda m, s, t: output_var[s, t] <= model.BESS_Pmax[s,t] * bin_var[s, t]
             ))
             
         create_AS_constraints(model, model.BinStorage_reg, model.BESS_RegUP, "RegUP")
@@ -188,17 +188,17 @@ class StorageConstraints():
         def max_overall_power_rule(model, s, t):
             return model.PowerDischargeBESS[s,t] + model.BESS_RegUP[s,t] + model.BESS_SP[s,t] + \
                     model.BESS_NSP[s,t] + model.BESS_SUPP[s,t] + model.PowerChargeBESS[s,t] + \
-                    model.BESS_RegDOWN[s,t] <= model.storage_power[s]
+                    model.BESS_RegDOWN[s,t] <= model.BESS_Pmax[s,t]
         model.StoragePowerCons = Constraint(model.BESS_Storage, model.TimePeriods, rule=max_overall_power_rule)
         
         def BESS_min_soc_rule(model, s, t):
-            return model.SocStorage[s,t] >= model.MinimumSocStorage[s] + (model.BESS_SP[s,t] + \
+            return model.SocStorage[s,t] >= (model.BESS_Smin[s,t] + (model.BESS_SP[s,t] + \
                                         model.BESS_NSP[s,t]+ model.BESS_SUPP[s,t] + \
-                                        model.BESS_RegUP[s,t])*model.AS_SoC_time_requirement/model.MaximumEnergyStorage[s]
+                                        model.BESS_RegUP[s,t])*model.AS_SoC_time_requirement)/model.MaximumEnergyStorage[s]
         model.BESSSocMinimum = Constraint(model.BESS_Storage, model.TimePeriods, rule=BESS_min_soc_rule)
         
         def BESS_max_soc_rule(model, s, t):
-            return model.SocStorage[s,t] <= model.MaximumSocStorage[s] - model.BESS_RegDOWN[s,t] * model.AS_SoC_time_requirement/model.MaximumEnergyStorage[s]
+            return model.SocStorage[s,t] <= (model.BESS_Smax[s,t] - model.BESS_RegDOWN[s,t] * model.AS_SoC_time_requirement)/model.MaximumEnergyStorage[s]
         model.BESSSocMaximum = Constraint(model.BESS_Storage, model.TimePeriods, rule=BESS_max_soc_rule)
         
         def BESS_cycle_rule(m, s): #Not active right now
@@ -207,8 +207,10 @@ class StorageConstraints():
 
         def BESS_energy_conservation_rule(m, s, t):
             # storage s, time t
+            current_pmax = value(m.BESS_Pmax[s,t])
             if t == m.InitialTime:
-                return  (m.SocStorage[s, t] == m.StorageSocOnT0[s] + 
+                last_pmax = value(m.BESS_initial_Pmax[s]) + 1e-5
+                return  (m.SocStorage[s, t] == m.StorageSocOnT0[s] * current_pmax/last_pmax + 
                         (-m.PowerDischargeBESS[s, t] + m.PowerChargeBESS[s,t]*m.ConversionEfficiency[s] + 
                         m.RegDOWN_efficiency[t]*m.ConversionEfficiency[s]*m.BESS_RegDOWN[s,t] - 
                         m.RegUP_efficiency[t]*m.BESS_RegUP[s,t] - 
@@ -216,7 +218,8 @@ class StorageConstraints():
                         m.NSP_selector[t]*m.BESS_NSP[s,t]  -
                         m.SUPP_selector[t]*m.BESS_SUPP[s,t])*m.TimePeriodLengthHours/m.MaximumEnergyStorage[s])
             else:
-                return  (m.SocStorage[s, t] == m.SocStorage[s, t-1]*m.ScaledRetentionRate[s]  + 
+                last_pmax = value(m.BESS_Pmax[s,t-1]) + 1e-5
+                return  (m.SocStorage[s, t] == m.SocStorage[s, t-1]*m.ScaledRetentionRate[s] * current_pmax/last_pmax + 
                         (-m.PowerDischargeBESS[s, t] + m.PowerChargeBESS[s,t]*m.ConversionEfficiency[s] + 
                         m.RegDOWN_efficiency[t]*m.ConversionEfficiency[s]*m.BESS_RegDOWN[s,t] - 
                         m.RegUP_efficiency[t]*m.BESS_RegUP[s,t] - 

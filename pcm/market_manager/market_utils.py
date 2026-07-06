@@ -257,6 +257,8 @@ def populate_initial_status(source_model, target_model, timestep_minutes):
     ):
         current_storage_soc = source_storage_dict['state_of_charge']["values"][-1]
         target_storage_dict['initial_state_of_charge'] = soc_limit_validator(current_storage_soc)
+        if source_storage_dict["storage_type"] == "BESS":
+            target_storage_dict['initial_pmax'] = source_storage_dict['ess_pmax']["values"][-1]
         if source_storage_dict["storage_type"] == "PHS":
             target_storage_dict["initial_gen_mode"] = {}
             target_storage_dict["initial_pump_mode"] = {}

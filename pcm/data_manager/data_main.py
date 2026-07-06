@@ -3,6 +3,7 @@ import pandas as pd
 import json
 import yaml
 import re
+import warnings
 from .network_parser import NetworkParser
 from .gen_parser import GenParser
 from .reserve_parser import ReserveParser
@@ -228,8 +229,10 @@ class DataManager:
         self.RT_timeseries["system"].update(self.reserveparser.reserve_deployment)
 
         # Storage
-        self.storageparser.parse_storage(self.networkparser.bus_dict)
-        self.constant_data_dict["elements"]["storage"] = self.storageparser.storage_dict
+        da_storage_dict = self.storageparser.parse_storage(self.networkparser.bus_dict, self.time_settings["DA_timekeys"])
+        self.DA_timeseries["elements"]["storage"] = da_storage_dict
+        rt_storage_dict = self.storageparser.parse_storage(self.networkparser.bus_dict, self.time_settings["RT_timekeys"])
+        self.RT_timeseries["elements"]["storage"] = rt_storage_dict
         self.constant_data_dict["system"].update(self.storageparser.static_storage_dict)
 
         #Store penalties
@@ -243,10 +246,33 @@ class DataManager:
             "Flexramp_shortfall_penalty": "Flexramp shortfall",
             "Contingency_flow_violation_penalty": "Contingency flow violation"
         }
-        penalty_df = self.csv_data["penalties"]
-        for dict_key, dict_value in penalty_key_map.items():
-            self.constant_data_dict["system"][dict_key] = float(penalty_df.loc[penalty_df["Name"] == dict_value, "Cost $/MWh"].values[0])
-            
+        default_penalties = {
+            "Load Curtailment": 1000.0,
+            "DA Reserve Shortfall": 500.0,
+            "Regulation shortfall": 500.0,
+            "Spinning reserve shortfall": 400.0,
+            "Nonspinning reserve shortfall": 400.0,
+            "Supplemental reserve shortfall": 400.0,
+            "Flexramp shortfall": 400.0,
+            "Contingency flow violation": 100.0,
+        }
+        penalty_df = self.csv_data.get("penalties")
+        if penalty_df is None:
+            warnings.warn(
+                "penalties.csv not found. Using default penalty values.",
+                UserWarning,
+            )
+
+            for dict_key, penalty_name in penalty_key_map.items():
+                self.constant_data_dict["system"][dict_key] = default_penalties[penalty_name]
+        else:
+            for dict_key, penalty_name in penalty_key_map.items():
+                self.constant_data_dict["system"][dict_key] = float(
+                    penalty_df.loc[
+                        penalty_df["Name"] == penalty_name,
+                        "Cost $/MWh"
+                    ].iloc[0]
+                )
     # -------------------------------------------------------------------------
 
     def export_input_json(self, optional_dir = None):
