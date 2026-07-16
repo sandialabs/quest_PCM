@@ -251,7 +251,7 @@ class ConfigEditorDialog(QDialog):
 
         add_dropdown(
             "solver",
-            ["cplex", "gurobi", "glpk", "cbc", "xpress", "knitro"],
+            ["cplex", "gurobi", "glpk", "cbc", "xpress", "appsi_highs"],
             help_text="Select the solver to use for optimization. Recommended 'cplex' or 'gurobi'",
             column="left",
         )

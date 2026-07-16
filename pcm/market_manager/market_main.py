@@ -1,4 +1,5 @@
 import os
+from wsgiref import types
 import pandas as pd
 from pyomo.environ import *
 from datetime import datetime
@@ -67,17 +68,62 @@ class MarketSimulator:
             pyomo_md = self.egret_uc_model_generator(egret_md, PTDF_matrix_dict = self.PTDF_holder, relaxed=model_relaxed)
         else:
             pyomo_md = self.egret_uc_model_generator(egret_md, relaxed=model_relaxed)
+        
+        solver_name = self.data_obj.config["solver"]  # "appsi_highs"
+        def patch_egret_solverfactory_for_appsi_highs():
+            import egret.common.solver_interface as egret_si
+
+            original_solver_factory = egret_si.po.SolverFactory
+
+            def patched_solver_factory(solver_name, *args, **kwargs):
+                solver = original_solver_factory(solver_name, *args, **kwargs)
+
+                if solver_name == "appsi_highs":
+                    try:
+                        solver.name = "appsi_highs"
+                    except Exception:
+                        try:
+                            type(solver).name = "appsi_highs"
+                        except Exception:
+                            pass
+                def reset(self):
+                    # No-op reset for appsi_highs LegacySolver
+                    return None
+                import types
+                solver.reset = types.MethodType(reset, solver)
+                return solver
+                
+            egret_si.po.SolverFactory = patched_solver_factory
+
+        if solver_name == "appsi_highs":
+            patch_egret_solverfactory_for_appsi_highs()
+
+            solver_arg = "appsi_highs"
+
+            solver_options = {
+                "mip_rel_gap": self.data_obj.config.get("mipgap", 0.001)
+            }
+
+            # Important: pass None here because HiGHS options are handled through solver_options
+            mipgap_arg = None
+            timelimit_arg = None
+
+        else:
+            solver_arg = solver_name
+            solver_options = None
+            mipgap_arg = self.data_obj.config.get("mipgap", 0.001)
+            timelimit_arg = None
 
         if model_relaxed:
             pyomo_md.dual = Suffix(direction=Suffix.IMPORT)
         pyomo_sol, _, _ = self.egret_uc_solver(
             pyomo_md,
-            solver=self.data_obj.config["solver"],
-            mipgap=self.data_obj.config.get("mipgap", 0.001),
-            timelimit=None,
+            solver=solver_arg,          # string, not instantiated solver
+            mipgap=mipgap_arg,          # None for appsi_highs
+            timelimit=timelimit_arg,
             solver_tee=tee,
             symbolic_solver_labels=False,
-            solver_options=None,
+            solver_options=solver_options,
             solve_method_options=None,
             relaxed=model_relaxed
         )

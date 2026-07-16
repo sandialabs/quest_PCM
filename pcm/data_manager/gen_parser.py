@@ -126,11 +126,11 @@ class GenParser:
                 cold_heat = float(row.get("Start Heat Cold MBTU"))
 
                 if first_lag != min_down:
-                    print(
-                        f"DATA Warning: The first startup lag for thermal generator={gen_id} "
-                        f"(Lag = {first_lag} hr does not equal the minimum down time {min_down} hr). "
-                        f"Setting startup_fuel to [[{min_down}, {cold_heat}]]."
-                    )
+                    # print(
+                    #     f"DATA Warning: The first startup lag for thermal generator={gen_id} "
+                    #     f"(Lag = {first_lag} hr does not equal the minimum down time {min_down} hr). "
+                    #     f"Setting startup_fuel to [[{min_down}, {cold_heat}]]."
+                    # )
                     # DATA ERROR condition triggered
                     # Use Cold start heat (most conservative)
                     cold_heat = float(row.get("Start Heat Cold MBTU"))

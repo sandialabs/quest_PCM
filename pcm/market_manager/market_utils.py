@@ -352,8 +352,8 @@ def evaluate_system_costs_revenue(md_sol, md_DA_sol, evaluate_revenue=False, mod
         gen_bus = RT_gen_dict['bus']
         gen_area = RT_gen_dict['area']
 
-        DA_area_dict = md_DA_sol.data["elements"]["area"][gen_area]
-        RT_area_dict = md_sol.data["elements"]["area"][gen_area]
+        DA_area_dict = md_DA_sol.data["elements"]["area"].get(gen_area, {})
+        RT_area_dict = md_sol.data["elements"]["area"].get(gen_area, {})
 
         DA_lmp_series = md_DA_sol.data["elements"]["bus"][gen_bus]["lmp"]["values"]
         RT_lmp_series = md_sol.data["elements"]["bus"][gen_bus]["lmp"]["values"]
@@ -396,8 +396,8 @@ def evaluate_system_costs_revenue(md_sol, md_DA_sol, evaluate_revenue=False, mod
         bus = RT_storage_dict['bus']
         area = RT_storage_dict['area']
 
-        DA_area_dict = md_DA_sol.data["elements"]["area"][area]
-        RT_area_dict = md_sol.data["elements"]["area"][area]
+        DA_area_dict = md_DA_sol.data["elements"]["area"].get(area, {})
+        RT_area_dict = md_sol.data["elements"]["area"].get(area, {})
 
         DA_lmp_series = md_DA_sol.data["elements"]["bus"][bus]["lmp"]["values"]
         RT_lmp_series = md_sol.data["elements"]["bus"][bus]["lmp"]["values"]
