@@ -1,4 +1,5 @@
 import os
+import logging
 from wsgiref import types
 import pandas as pd
 from pyomo.environ import *
@@ -8,6 +9,9 @@ from egret.data.model_data import ModelData
 from egret.common.log import logger as egret_logger
 from pcm.market_manager.egret_decorators import apply_egret_decorators
 import pcm.market_manager.market_utils as MarketUtils
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.ERROR)
 
 class MarketSimulator:
     """
@@ -155,7 +159,7 @@ class MarketSimulator:
                 total_days, input_data.DA_lookahead_periods, input_data.RT_resolution, input_data.RT_lookahead_periods
             )
         else:
-            print("Simulating Day-Ahead market only. Real-Time simulation will be skipped.")
+            logger.info("Simulating Day-Ahead market only. Real-Time simulation will be skipped.")
             DA_timekeys_set, _ = self.utils.build_time_sets(total_days, input_data.DA_lookahead_periods)
 
         tic = perf_counter()
@@ -230,7 +234,7 @@ class MarketSimulator:
             c_fixed, c_variable = self.utils.evaluate_system_costs_revenue(md_DA_truncated, md_DA_truncated, evaluate_revenue = True, mode="multi_hour")
         else:
             c_fixed, c_variable = self.utils.evaluate_system_costs_revenue(md_DA_truncated, md_DA_truncated, mode = "multi_hour")
-        print(f'SCUC Solved for {current_day} ! DA Commitment cost = {c_fixed:.2f}, DA Production cost = {c_variable:.2f}')
+        logger.info(f'SCUC Solved for {current_day} ! DA Commitment cost = {c_fixed:.2f}, DA Production cost = {c_variable:.2f}')
 
         return md_DA_truncated, price_DA_sol, pyomo_DA_sol
 
