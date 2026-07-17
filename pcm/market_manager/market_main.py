@@ -64,12 +64,20 @@ class MarketSimulator:
         Returns:
             Egret solution or (Pyomo solution, Egret solution) if return_pyomo_result is True.
         """
-        if self.PTDF_holder:
+        # Check for line outages. If any, recompute PTDFs
+        self.outage_flag = False
+        for line_details in egret_md.data["elements"]["branch"].values():
+            planned_outage_values = line_details.get("planned_outage", {}).get("values", [])
+            if 1 in planned_outage_values:
+                self.outage_flag = True
+                break
+
+        if self.PTDF_holder and not self.outage_flag:
             pyomo_md = self.egret_uc_model_generator(egret_md, PTDF_matrix_dict = self.PTDF_holder, relaxed=model_relaxed)
         else:
             pyomo_md = self.egret_uc_model_generator(egret_md, relaxed=model_relaxed)
         
-        solver_name = self.data_obj.config["solver"]  # "appsi_highs"
+        solver_name = self.data_obj.config["solver"]  
         def patch_egret_solverfactory_for_appsi_highs():
             import egret.common.solver_interface as egret_si
 
@@ -204,9 +212,9 @@ class MarketSimulator:
             self.utils.populate_initial_status(initializer_model, md_DA, self.data_obj.config.get("RT_resolution", 60))
         self.utils.fix_penalties_egret(md_DA, md_DA.data["system"], 1000)
         pyomo_DA_sol, md_DA_sol = self.uc_solver(md_DA, return_pyomo_result=True, tee = False)
-
-        # if day == 0:
-        #     self.PTDF_holder = pyomo_DA_sol._PTDFs
+        #Record the PTDFs for future use if not already stored and no outages are present
+        if not self.PTDF_holder and not self.outage_flag:
+            self.PTDF_holder = pyomo_DA_sol._PTDFs
         # Pricing and cost evaluation
         pricing_model = md_DA_sol.clone()
         if self.solve_pricing_problem:
