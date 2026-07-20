@@ -22,7 +22,7 @@ Current release version: 1.1.0
 
 Production cost models (PCM) are computational tools that simulate power system operations by optimizing the commitment and dispatch of generation resources to meet demand at least cost, while respecting technical and reliability constraints. QuESt PCM is an open-source power system production cost modeling tool designed for high-fidelity representation of energy storage systems (ESS). Built in Python, it uses the Pyomo optimization interface to formulate technology-specific storage models and to capture diverse storage operational constraints. The tool also models market participation capabilities of storage systems, helping assess their impacts on day-ahead and real-time price signals. Python wrappers allow seamless simulation of market operations, and [EGRET](https://github.com/grid-parity-exchange/Egret/tree/main) serves as the optimization engine for security-constrained unit commitment and economic dispatch. This tool is part of [QuESt 2.0](https://github.com/sandialabs/snl-quest): Open-source Platform for Energy Storage Analytics. Below is a high-level overview of the QuESt PCM tool.
 <div style="text-align: center;">
-<img src = "Images/QuEST_PCM_IO.png" alt="overview" />
+<img src = "Images/tool_outline.png" alt="overview" />
 </div>
 
 [Back to Top](#top)
@@ -108,11 +108,12 @@ Ensure an optimization solver is installed on your machine. For best performance
 
 ### Setup the Input CSV Files
 
-The network, generator, reserve, and storage data are all input as .csv files. They must be present within the [Data](Data/) directory. Each file must follow the specific format required by QuESt PCM. For detailed instructions on how to populate these files, see the [input_readme](Data/data_readme.md).
+The network, generator, reserve, and storage data are all input as .csv files. They must be present within the [Data](Data/) directory. Each file must follow the specific format required by QuESt PCM. For detailed instructions on how to populate these files, see the [Data Requirements](https://github.com/sandialabs/quest_PCM/wiki/Data-Requirements) page.
 
 ### Configure the Input File
 
-Before running the simulation, configure the input yaml file in [Config](config/) directory with the specific simulation parameters. Open the file in a text editor and adjust the parameters according to your requirements. The guidelines for setting up the config files are present in [config_readme](config/config_readme.md).
+Before running the simulation, configure the input yaml file in [Config](config/) directory with the specific simulation parameters. Open the file in a text editor and adjust the parameters according to your requirements. The guidelines for setting up the config files are present in [Configuration Instructions](https://github.com/sandialabs/quest_PCM/wiki/Configuration).
+
 ### Option 1: Run the Program using Command Line
 
 First, make sure that you are in the main project directory. Then, use the `example_script.py` to run the simulation. Before running, update the main_data_path, yaml_path, and result_path variables in the script to point to your desired system. Then, with your virtual environment activated, execute the script from the command line as follows:
@@ -137,68 +138,16 @@ When the GUI (shown below) opens, first browse to and select the data directory 
 
 ### Analyze the Results
 
-Simulation results are stored in the [Results](Results/) directory. Separate timestamp folders are generated for each simulation run. Some key results from each simulation run include: system generation dispatch, operation costs, ancillary service allocations, and storage dispatch characteristics. Detailed decription of QuESt PCM outputs and file organization are present in the [output_readme](Results/output_readme.md).
+Simulation results are stored in the [Results](Results/) directory. Separate timestamp folders are generated for each simulation run. Some key results from each simulation run include: system generation dispatch, operation costs, ancillary service allocations, and storage dispatch characteristics. Detailed decription of QuESt PCM outputs and file organization are present in the [Output Details](https://github.com/sandialabs/quest_PCM/wiki/Tool-Outputs).
 
 [Back to Top](#top)
 ## Example Simulation
 <a id="example_simulation"></a>
-Two test cases are included with the initial release of QuESt PCM. One test case includes a purely synthetic 5-bus system derived from [Prescient](https://github.com/grid-parity-exchange/Prescient/tree/main) examples. Users can use this system for quick tests. Another test case includes the IEEE [RTS-GMLC](https://github.com/GridMod/RTS-GMLC) synthetic grid, which is a publicly available test system that is derived from IEEE RTS-96 test system. Figure 1 displays the nodal model of the RTS-GMLC test case included within the tool. 
+Two test cases are included with the initial release of QuESt PCM. One test case includes a purely synthetic 5-bus system derived from [Prescient](https://github.com/grid-parity-exchange/Prescient/tree/main) examples. Users can use this system for quick tests. Another test case includes the IEEE [RTS-GMLC](https://github.com/GridMod/RTS-GMLC) synthetic grid, which is a publicly available test system that is derived from IEEE RTS-96 test system. Figure 1 displays the nodal model of the RTS-GMLC test case included within the tool. For representative simulation outputs and visualizations generated by QuESt PCM on the RTS-GMLC system, see the [Example Results](https://github.com/sandialabs/quest_PCM/wiki/Example-Results) page.
 
 <img src = "Images/rts_gmlc.png" width="500" alt="Results" />
 
 **Figure 1:** IEEE RTS-GMLC Test Case nodal model
-
-Some outputs of Quest PCM for a 5-day RTS-GMLC simulation (included in the [config](config/GMLC_config.yaml) file) are illustrated as follows:
-
-### System Operation 
- QuESt PCM provides detailed results for system operation, including chronological unit commitment and economic dispatch decisions, nodal power flows, and generator production levels. While the full set of detailed results is available to users through summary Excel files and structured .json outputs, QuESt PCM also offers system-level operational overview plots for visualization and analysis. For example, Figure 2 illustrates system dispatch, generation costs, and interactive locational marginal price (LMP) plots obtained from the RTS-GMLC simulation.
-
-<img src = "Images/dispatch.png" width="386" alt="Results" />  <img src = "Images/cost.png" width="409" alt="Results" /> 
-
-<img src = "Images/LMP_image.png" width="800" alt="Results" />
-
-**Figure 2:** 5-day dispatch, costs, and LMPs of the IEEE RTS-GMLC test case.
-
-### Ancillary Services
-QuESt PCM also emphasizes on modeling the system ancillary services. It enables users to analyze the revenues earned by generators and storage resources from ancillary service participation through summary Excel sheets and visual plots. Figure 3 presents example plots of real-time ancillary service market-clearing results produced by QuESt PCM for the RTS-GMLC system, with storage systems also contributing to operational reserves.
-
-<img src = "Images/regup_plot.png" width="397" alt="Results" />  <img src = "Images/regdown_plot.png" width="397" alt="Results" /> 
-
-<img src = "Images/as_clearing_prices_plot.png" width="800" alt="Results" />
-
-**Figure 3:** Ancillary service market clearing results for RTS-GMLC.
-
-### Storage Participation in Energy and Ancillary Service Markets 
-QuESt PCM provides extensive modeling and visualization capabilities for energy storage systems within production cost models. Currently, the tool supports three distinct storage models: generic, battery, and pumped hydro. Each storage system is equipped with its own set of operational constraints. Figure 4 illustrates the operation of a generic 50 MW, 150 MWh energy storage system with charging and discharging-only capability over a five-day simulation of the RTS-GMLC system. Figure 5 presents a comparison of the dispatch characteristics of battery energy storage (BESS) and pumped hydro storage (PHS) units of equivalent capacity, replacing the generic storage model and participating in ancillary service markets.
-
-<table>
-  <tr>
-    <td>
-      <img src="Images/storage_dispatch_plot.png" width="395" alt="Dispatch">
-    </td>
-    <td valign="middle">
-      <img src="Images/storage_SoC_plot.png" width="395" alt="State of Charge">
-    </td>
-  </tr>
-</table>
-
-**Figure 4:** Storage dispatch and state-of-charge in RTS-GMLC.
-
-<img src = "Images/BESS_dispatch_plot.png" width="395" alt="Results" />  <img src = "Images/PHS_dispatch_plot.png" width="395" alt="Results" /> 
-
-**Figure 5:** Battery and pumped hydro storage dispatch in RTS-GMLC with ancillary service participation.
-
-### Detailed Storage Tech-Specific Modeling
-
-QuESt PCM also provides detailed modeling of technology-specific storage operation. In the current release, tech-specific models for two storage technologies are supported: batteries and pumped hydro. For batteries, QuESt PCM evaluates potential degradation arising from system operation. For example, Figure 6 presents two plots showing battery degradation when participating in energy markets only versus participation in both energy and reserve markets. The degradation models used for this evaluation are based on cyclic degradation data from the [batteryarchive](https://www.batteryarchive.org/index.html). Similarly, for pumped-hydro systems, unit-level control constraints are included, such as generator and pump operation limits, flow dynamics, and reservoir interactions. Figure 7 illustrates an example visualization of pumped-hydro unit operation status from the RTS-GMLC five-day simulation.
-
-<img src = "Images/BESS_degradation_arbitrage.png" width="397" alt="Results" />  <img src = "Images/BESS_degradation_ancillaries.png" width="397" alt="Results" /> 
-
-**Figure 6:** Potential degradation of BESS for different cathode chemistries with charging discharging only (first figure) vs ancillary service participation (second figure).
-
-<img src = "Images/PHS_schedules.png" width="800" alt="Results" />
-
-**Figure 7:** Generator/Pump unit operation schedule of pumped hydro storage in RTS-GMLC.
 
 [Back to Top](#top)
 ## Acknowledgment
