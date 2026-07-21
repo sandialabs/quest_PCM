@@ -210,7 +210,7 @@ class MarketSimulator:
         if day > 0 and initializer_model is not None:
             self.utils.populate_initial_status(initializer_model, md_DA, self.data_obj.config.get("RT_resolution", 60))
         self.utils.fix_penalties_egret(md_DA, md_DA.data["system"], 1000)
-        pyomo_DA_sol, md_DA_sol = self.uc_solver(md_DA, return_pyomo_result=True, tee = True)
+        pyomo_DA_sol, md_DA_sol = self.uc_solver(md_DA, return_pyomo_result=True, tee = False)
 
         # if day == 0:
         #     self.PTDF_holder = pyomo_DA_sol._PTDFs
