@@ -63,21 +63,74 @@ class MarketSimulator:
         Returns:
             Egret solution or (Pyomo solution, Egret solution) if return_pyomo_result is True.
         """
-        if self.PTDF_holder:
+        # Check for line outages. If any, recompute PTDFs
+        self.outage_flag = False
+        for line_details in egret_md.data["elements"]["branch"].values():
+            planned_outage_values = line_details.get("planned_outage", {}).get("values", [])
+            if 1 in planned_outage_values:
+                self.outage_flag = True
+                break
+
+        if self.PTDF_holder and not self.outage_flag:
             pyomo_md = self.egret_uc_model_generator(egret_md, PTDF_matrix_dict = self.PTDF_holder, relaxed=model_relaxed)
         else:
             pyomo_md = self.egret_uc_model_generator(egret_md, relaxed=model_relaxed)
 
+        solver_name = self.data_obj.config["solver"]  
+        def patch_egret_solverfactory_for_appsi_highs():
+            import egret.common.solver_interface as egret_si
+
+            original_solver_factory = egret_si.po.SolverFactory
+
+            def patched_solver_factory(solver_name, *args, **kwargs):
+                solver = original_solver_factory(solver_name, *args, **kwargs)
+
+                if solver_name == "appsi_highs":
+                    try:
+                        solver.name = "appsi_highs"
+                    except Exception:
+                        try:
+                            type(solver).name = "appsi_highs"
+                        except Exception:
+                            pass
+                def reset(self):
+                    # No-op reset for appsi_highs LegacySolver
+                    return None
+                import types
+                solver.reset = types.MethodType(reset, solver)
+                return solver
+                
+            egret_si.po.SolverFactory = patched_solver_factory
+
+        if solver_name == "appsi_highs":
+            patch_egret_solverfactory_for_appsi_highs()
+
+            solver_arg = "appsi_highs"
+
+            solver_options = {
+                "mip_rel_gap": self.data_obj.config.get("mipgap", 0.001)
+            }
+
+            # Important: pass None here because HiGHS options are handled through solver_options
+            mipgap_arg = None
+            timelimit_arg = None
+
+        else:
+            solver_arg = solver_name
+            solver_options = None
+            mipgap_arg = self.data_obj.config.get("mipgap", 0.001)
+            timelimit_arg = None
+            
         if model_relaxed:
             pyomo_md.dual = Suffix(direction=Suffix.IMPORT)
         pyomo_sol, _, _ = self.egret_uc_solver(
             pyomo_md,
-            solver=self.data_obj.config["solver"],
-            mipgap=self.data_obj.config.get("mipgap", 0.001),
+            solver=solver_arg,
+            mipgap=mipgap_arg,
             timelimit=None,
             solver_tee=tee,
             symbolic_solver_labels=False,
-            solver_options=None,
+            solver_options=solver_options,
             solve_method_options=None,
             relaxed=model_relaxed
         )
@@ -157,7 +210,7 @@ class MarketSimulator:
         if day > 0 and initializer_model is not None:
             self.utils.populate_initial_status(initializer_model, md_DA, self.data_obj.config.get("RT_resolution", 60))
         self.utils.fix_penalties_egret(md_DA, md_DA.data["system"], 1000)
-        pyomo_DA_sol, md_DA_sol = self.uc_solver(md_DA, return_pyomo_result=True, tee = False)
+        pyomo_DA_sol, md_DA_sol = self.uc_solver(md_DA, return_pyomo_result=True, tee = True)
 
         # if day == 0:
         #     self.PTDF_holder = pyomo_DA_sol._PTDFs

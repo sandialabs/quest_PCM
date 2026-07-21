@@ -1,4 +1,4 @@
-solver: 'cplex' # "cplex", "gurobi", "glpk", "cbc", "xpress", "knitro"
+solver: 'appsi_highs' # "cplex", "gurobi", "glpk", "cbc", "xpress", "appsi_highs"
 mipgap: 0.05 #MIP gap for the solver
 baseMVA: 100.0 # Base MVA for the system
 start_date: 02/10/2020
@@ -8,7 +8,7 @@ DA_lookahead_periods: 0 #How many hours to lookahead in day-ahead SCUC (in hours
 RT_resolution: 60 # Duration of each Real-Time interval in minutes (e.g., 60 = hourly)
 RT_lookahead_periods: 1 # Number of future intervals (of RT_resolution length). make sure its smaller than DA_lookahead_periods
 run_RTSCED_as: "MILP" #Choices are "LP" or "MILP". LP is faster (as all commitment variables from DA are fixed) but MILP gives better commitment decisions
-solve_pricing_problem: False # Whether to solve the pricing problem after solving the unit commitment and economic dispatch problems. Setting this to False will speed up the simulation but will not generate locational marginal prices (LMPs) and other price signals.
+solve_pricing_problem: True # Whether to solve the pricing problem after solving the unit commitment and economic dispatch problems. Setting this to False will speed up the simulation but will not generate locational marginal prices (LMPs) and other price signals.
 branch_contingency: False #impose N-1 transmission security constraints. True or False
 load_timeseries_aggregation_level: area #"node or "area". How your load_timeseries data is arranged columnwise
 # For operational reserves, select "None", "fixed", "percentage", or "timeseries" data

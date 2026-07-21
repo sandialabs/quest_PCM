@@ -53,7 +53,7 @@ Key features of the QuESt PCM tool include:
 
 ### Solver Installation
 
-Ensure an optimization solver is installed on your machine. For best performance, use a commercial solver such as Gurobi and Cplex. Solvers to consider include:
+By default, [HiGHs](<https://highs.dev/#top>) solver is included with the QuESt PCM installation. However, for best performance, use a commercial solver such as Gurobi and Cplex. Additional solvers to consider include:
 
 **Commercial Solvers**
 - [Gurobi](<https://www.gurobi.com/>)
@@ -61,7 +61,7 @@ Ensure an optimization solver is installed on your machine. For best performance
 
 **Open-source Solvers**
 - [Cbc](<https://github.com/coin-or/Cbc>)
-- [HiGHs](<https://highs.dev/#top>)
+- [SCIP](<https://www.scipopt.org/>)
 
 ### Setting Up a Virtual Environment
 1. Install `virtualenv` (if not already installed):
@@ -138,7 +138,7 @@ When the GUI (shown below) opens, first browse to and select the data directory 
 
 ### Analyze the Results
 
-Simulation results are stored in the [Results](Results/) directory. Separate timestamp folders are generated for each simulation run. Some key results from each simulation run include: system generation dispatch, operation costs, ancillary service allocations, and storage dispatch characteristics. Detailed decription of QuESt PCM outputs and file organization are present in the [Output Details](https://github.com/sandialabs/quest_PCM/wiki/Tool-Outputs).
+Simulation results are stored in the Results directory. Separate timestamp folders are generated for each simulation run. Some key results from each simulation run include: system generation dispatch, operation costs, ancillary service allocations, and storage dispatch characteristics. Detailed decription of QuESt PCM outputs and file organization are present in the [Output Details](https://github.com/sandialabs/quest_PCM/wiki/Tool-Outputs).
 
 [Back to Top](#top)
 ## Example Simulation

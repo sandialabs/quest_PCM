@@ -35,8 +35,8 @@ class StorageVars():
 
         # Storage decision variables: charging/discharging mode
         if _is_relaxed(model):
-            model.InputStorage = Var(model.Storage, model.TimePeriods, within=Any)
-            model.OutputStorage = Var(model.Storage, model.TimePeriods, within=Any)
+            model.InputStorage = Var(model.Storage, model.TimePeriods, within=Reals)
+            model.OutputStorage = Var(model.Storage, model.TimePeriods, within=Reals)
             # Fix variables to provided values in relaxed case
             for s in model.GESS_Storage:
                 for t in model.TimePeriods:
@@ -58,10 +58,10 @@ class StorageVars():
 
         # Ancillary service participation binaries for BESS and PHS
         if _is_relaxed(model):
-            model.BinStorage_reg = Var(model.BESS_PHS_set, model.TimePeriods, within=Any)
-            model.BinStorage_SP = Var(model.BESS_PHS_set, model.TimePeriods, within=Any)
-            model.BinStorage_NSP = Var(model.BESS_PHS_set, model.TimePeriods, within=Any)
-            model.BinStorage_SUPP = Var(model.BESS_PHS_set, model.TimePeriods, within=Any)
+            model.BinStorage_reg = Var(model.BESS_PHS_set, model.TimePeriods, within=Reals)
+            model.BinStorage_SP = Var(model.BESS_PHS_set, model.TimePeriods, within=Reals)
+            model.BinStorage_NSP = Var(model.BESS_PHS_set, model.TimePeriods, within=Reals)
+            model.BinStorage_SUPP = Var(model.BESS_PHS_set, model.TimePeriods, within=Reals)
             # Fix variables to provided values in relaxed case
             for s in model.BESS_PHS_set:
                 for t in model.TimePeriods:

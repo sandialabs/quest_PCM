@@ -251,8 +251,8 @@ class ConfigEditorDialog(QDialog):
 
         add_dropdown(
             "solver",
-            ["cplex", "gurobi", "glpk", "cbc", "xpress", "knitro"],
-            help_text="Select the solver to use for optimization. Recommended 'cplex' or 'gurobi'",
+            ["appsi_highs", "cplex", "gurobi", "glpk", "cbc", "xpress", "scip"],
+            help_text="Select the solver to use for optimization. Default: 'appsi_highs'. Recommended: 'cplex' or 'gurobi'",
             column="left",
         )
         add_float("mipgap", 0.01, help_text="MIP gap for the solver", column="left")
