@@ -112,8 +112,8 @@ class GenParser:
 
                 if (
                     pd.notna(time_val) and
-                    pd.notna(heat_val) and
-                    float(time_val) != 0     # <-- exclude zero start times
+                    pd.notna(heat_val) #and
+                    #float(time_val) != 0     # <-- exclude zero start times
                 ):
                     startup_fuel_data.append([int(time_val), float(heat_val)])
             if startup_fuel_data:
