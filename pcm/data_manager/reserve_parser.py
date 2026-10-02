@@ -55,8 +55,12 @@ class ReserveParser:
         df_RT = self.data_df.get("RT_reserves_fixed_percentage")
         df_deploy = self.data_df.get("reserve_deployment")
 
-        if df_DA is None or df_RT is None:
-            raise ValueError("DA_reserves_fixed_percentage.csv and RT_reserve_fixed_percentage.csv files must be present in the data\\reserves folder.")
+        if simulate_DA_only:
+            if df_DA is None:
+                raise ValueError("DA_reserves_fixed_percentage.csv file must be present in the data\\reserves folder.")
+        else:
+            if df_DA is None or df_RT is None:
+                raise ValueError("DA_reserves_fixed_percentage.csv and RT_reserve_fixed_percentage.csv files must be present in the data\\reserves folder.")
 
         system_areas = {bus.get("area") for bus in bus_dict.values() if bus.get("area")}
 
