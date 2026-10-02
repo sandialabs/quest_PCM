@@ -14,6 +14,7 @@ setup(
         "cycler==0.12.1",
         "et_xmlfile==2.0.0",
         "fonttools==4.61.1",
+        "highspy==1.15.1",
         "iniconfig==2.3.0",
         "kiwisolver==1.4.9",
         "matplotlib==3.10.8",
