@@ -123,6 +123,7 @@ class MarketSimulator:
             
         if model_relaxed:
             pyomo_md.dual = Suffix(direction=Suffix.IMPORT)
+        
         pyomo_sol, _, _ = self.egret_uc_solver(
             pyomo_md,
             solver=solver_arg,
@@ -149,6 +150,8 @@ class MarketSimulator:
         """
         input_data = self.data_obj
         total_days = (input_data.end_date - input_data.start_date).days + 1 - bool(input_data.DA_lookahead_periods)
+
+        self._simulate_storage_scheduling()
         if not self.data_obj.config.get("simulate_DA_only", False):
             DA_timekeys_set, RT_timekeys_set = self.utils.build_time_sets(
                 total_days, input_data.DA_lookahead_periods, input_data.RT_resolution, input_data.RT_lookahead_periods
@@ -189,7 +192,60 @@ class MarketSimulator:
 
         toc = perf_counter()
         print(f"Total PCM simulation time: {toc - tic:.2f} seconds")
-        
+
+    def _simulate_storage_scheduling(self):
+        """
+        Runs the storage scheduling simulation for a single day.
+
+        Args:
+            current_day (date): The current simulation day.
+            DA_timekeys (list): List of DA time keys for the day.
+            day (int): Day index in the simulation loop.
+            initializer_model: Model to initialize DA status (from previous RT).
+        Populates:
+            self.DA_model with storage schedules
+        """
+        scheduling_time_keys = self.DA_model.data["system"]["time_keys"]
+        model_time_keys = self.DA_model.data["system"]["time_keys"]
+        scheduling_horizon = self.data_obj.config.get("storage_scheduling_horizon")
+        model_time_key_to_idx = {t: i for i, t in enumerate(model_time_keys)}
+
+        for s, storage_dict in self.DA_model.elements(element_type='storage'):
+            storage_dict["scheduling_problem_soc"] = {'data_type': 'time_series', 'values': [storage_dict['end_state_of_charge']]*len(model_time_keys)}
+            
+        if not self.data_obj.config.get("solve_ESS_scheduling_problem", False):
+            print("No LDES storage found in the system. Skipping storage scheduling simulation.")
+            return
+        else:
+            print("Running storage scheduling simulation ...")
+        soc_vals_all = {s: [] for s, _ in self.DA_model.elements(element_type='storage')}
+        for start_idx in range(0, len(scheduling_time_keys), scheduling_horizon):
+            
+            end_idx = min(start_idx + scheduling_horizon, len(scheduling_time_keys))
+            horizon_time_keys = scheduling_time_keys[start_idx:end_idx]
+
+            current_scheduling_model = self.DA_model.clone_at_time_keys(horizon_time_keys)
+            if start_idx != 0:
+                self.utils.populate_initial_status(scheduling_model_solved,current_scheduling_model, 60)
+            if self.data_obj.config.get("CopperSheet_for_storage_scheduling", False):
+                self.utils.convert_to_copper_sheet(current_scheduling_model)
+            self.utils.fix_penalties_egret(current_scheduling_model, current_scheduling_model.data["system"], 1000)
+            current_scheduling_model.data["current_market"] = "DA"
+            current_scheduling_model.data["scheduling_problem"] = 1
+
+            scheduling_model_solved = self.uc_solver(current_scheduling_model, model_relaxed=True, tee= True)
+
+            for s, storage_dict in self.DA_model.elements(element_type='storage'):
+                soc_vals = scheduling_model_solved.data["elements"]["storage"][s]["state_of_charge"]["values"]
+                soc_vals_all[s].extend(soc_vals)
+                for t, soc in zip(horizon_time_keys, soc_vals):
+                    full_idx = model_time_key_to_idx[t]
+                    storage_dict["scheduling_problem_soc"]["values"][full_idx] = soc
+                    
+        scheduling_results_store = os.path.join(os.getcwd(), "Results")
+        scheduling_soc_df = pd.DataFrame(soc_vals_all)
+        scheduling_soc_df.to_csv(os.path.join(scheduling_results_store, "scheduling_soc.csv"), index=False)
+
     def _simulate_day_ahead(self, current_day, DA_timekeys, day, initializer_model):
         """
         Runs the Day-Ahead simulation for a single day.

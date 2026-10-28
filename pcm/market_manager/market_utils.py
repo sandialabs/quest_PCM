@@ -515,6 +515,52 @@ def relax_PHS_binaries(model):
         if storage_dict["storage_type"] == "PHS":
             storage_dict["relax_PHS_vars"] = True
 
+def convert_to_copper_sheet(uc_model):
+    """
+    Converts the model to a copper sheet representation by removing all lines
+
+    Args:
+        uc_model: The model to be converted.
+    """
+    data = uc_model.data
+    data["elements"]["branch"] = {}
+    #keep only one bus and remove others
+    first_bus_key = next(iter(data["elements"]["bus"]))
+    data["elements"]["bus"] = {first_bus_key: data["elements"]["bus"][first_bus_key]}
+    first_bus_area = data["elements"]["bus"][first_bus_key]["area"]
+    first_bus_zone = data["elements"]["bus"][first_bus_key]["zone"]
+
+    # Sum all p_load time-series values
+    total_p_load_values = None
+    for load_key, load_dict in data["elements"]["load"].items():
+        p_values = load_dict["p_load"]["values"]
+
+        if total_p_load_values is None:
+            total_p_load_values = p_values.copy()
+        else:
+            total_p_load_values = [total + value for total, value in zip(total_p_load_values, p_values)]
+
+    # Replace all loads with one aggregate load on bus 1
+    data["elements"]["load"] = {
+        first_bus_key: {
+            "bus": first_bus_key,
+            "area": first_bus_area,
+            "zone": first_bus_zone,
+            "p_load": {"data_type": "time_series", "values": total_p_load_values}}}
+    
+    #set bus of all generators and storage to the remining bus
+    for (_, gen_dict) in uc_model.elements(element_type='generator'):
+        gen_dict["bus"] = list(data["elements"]["bus"].keys())[0]
+        gen_dict["area"] = first_bus_area
+        gen_dict["zone"] = first_bus_zone
+    for (_, storage_dict) in uc_model.elements(element_type='storage'):
+        storage_dict["bus"] = list(data["elements"]["bus"].keys())[0]
+        storage_dict["area"] = first_bus_area
+        storage_dict["zone"] = first_bus_zone
+    # remove all area level reserves
+    data["elements"]["area"] = {}
+    data["elements"]["zone"] = {}
+
 class BESS_Degradation:
     """Battery energy storage system (BESS) degradation model.
 

@@ -3,6 +3,7 @@ import pandas as pd
 import json
 import yaml
 import re
+import math
 from .network_parser import NetworkParser
 from .gen_parser import GenParser
 from .reserve_parser import ReserveParser
@@ -143,13 +144,19 @@ class DataManager:
         self.DA_lookahead_periods = self.config["DA_lookahead_periods"] 
         # Extend end date by one day if DA lookahead is used
         if self.DA_lookahead_periods > 0:
-            self.end_date += pd.Timedelta(days=1)
+            days_to_add = math.ceil(self.DA_lookahead_periods / 24)
+            self.end_date += pd.Timedelta(days=days_to_add)
         # Calculate number of simulation days
         num_days = (self.end_date - self.start_date).days + 1
         # Define DA periods (hourly)
         self.DA_periods = list(range(1, 25))  # 1 to 24 inclusive
         # Generate time keys for DA timeseries
-        time_keys_DA = list(range(1, len(self.DA_periods) * num_days + 1))
+        storage_lookahead_horizon = self.config.get("storage_scheduling_horizon", 0)  # Default to 168 hours if not specified
+        if storage_lookahead_horizon > 0:
+            self.end_date_extended = pd.to_datetime(self.config["end_date"], format="%m/%d/%Y") + pd.Timedelta(hours=storage_lookahead_horizon)
+
+        total_DA_period = max(len(self.DA_periods) * num_days + 1, storage_lookahead_horizon + 1)
+        time_keys_DA = list(range(1, total_DA_period))
         self.DA_timeseries["system"]["time_keys"] = list(map(str, time_keys_DA))
         # Set time period lengths (in minutes)
         self.DA_timeseries["system"]["time_period_length_minutes"] = 60
@@ -176,7 +183,7 @@ class DataManager:
         # Store a dict to pass on to helper classes
         self.time_settings = {
             'start_date': self.start_date,
-            'end_date': self.end_date,
+            'end_date': self.end_date_extended if storage_lookahead_horizon > 0 else self.end_date,
             'DA_periods': self.DA_periods,
             'RT_periods': self.RT_periods,
             'DA_timekeys': time_keys_DA,

@@ -1,14 +1,14 @@
-solver: 'appsi_highs' # "cplex", "gurobi", "glpk", "cbc", "xpress", "appsi_highs"
-mipgap: 0.05 #MIP gap for the solver
+solver: 'cplex' # "cplex", "gurobi", "glpk", "cbc", "xpress", "appsi_highs"
+mipgap: 0.001 #MIP gap for the solver
 baseMVA: 100.0 # Base MVA for the system
-start_date: 02/10/2020
-end_date: 02/10/2020
+start_date: 01/01/2020
+end_date: 01/30/2020
 simulate_DA_only: True # If True, only runs the day-ahead SCUC and skips the real-time SCED
 DA_lookahead_periods: 0 #How many hours to lookahead in day-ahead SCUC (in hours
 RT_resolution: 60 # Duration of each Real-Time interval in minutes (e.g., 60 = hourly)
 RT_lookahead_periods: 1 # Number of future intervals (of RT_resolution length). make sure its smaller than DA_lookahead_periods
 run_RTSCED_as: "MILP" #Choices are "LP" or "MILP". LP is faster (as all commitment variables from DA are fixed) but MILP gives better commitment decisions
-solve_pricing_problem: True # Whether to solve the pricing problem after solving the unit commitment and economic dispatch problems. Setting this to False will speed up the simulation but will not generate locational marginal prices (LMPs) and other price signals.
+solve_pricing_problem: True # Whether to solve the pricing problem after solving the unit commitment and economic dispatch. Setting this to False will speed up the simulation but will not generate locational marginal prices (LMPs) and other price signals.
 branch_contingency: False #impose N-1 transmission security constraints. True or False
 load_timeseries_aggregation_level: area #"node or "area". How your load_timeseries data is arranged columnwise
 # For operational reserves, select "None", "fixed", "percentage", or "timeseries" data
@@ -23,10 +23,13 @@ Supplemental Reserve: None
 Flexible Ramp Up: timeseries
 Flexible Ramp Down: timeseries
 
+solve_ESS_scheduling_problem: True #whether to solve the LP storage scheduling problem (important for LDES). If false, SoC is balanced daily.
+storage_scheduling_horizon: 8760 #how many hours to look ahead for storage scheduling. 
+CopperSheet_for_storage_scheduling: False #whether to convert the system to copper sheet for storage scheduling problem only. If False, the full network is used.
 storage_AS_participation_level: 4 #set between 0 and 4, how many ancillary services can ESS participate in one time-period (only applicable to batteries and pumped hydro)
 evaluate_degradation: False #whether to evaluate battery degradation in the simulation. Not applicable for generic and pumped hydro. 
 
-output_interval: "monthly" #how often to generate plots and json output. options are "at_once", "daily", "weekly", "monthly"
+output_interval: "at_once" #how often to generate plots and json output. options are "at_once", "daily", "weekly", "monthly"
 plotly_plots: True #generate html plots for better illustration. takes longer time
 plot_ancillary_services: False #whether to generate plots for ancillary services (regulation, reserves, ramping)
 plot_storage_details: True #whether to generate detailed plots for each storage (SoC, costs, revenue, etc.)

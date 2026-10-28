@@ -79,7 +79,6 @@ class StorageParams():
         if value(model.current_market) == "RT":
             model.AS_SoC_time_requirement = Param(within = NonNegativeReals, initialize=(self.storage_common_attrs or {}).get('AS_time_RT', 0.5))
         
-        
         model.RT_SOC_deviation_penalty = Param(within=NonNegativeReals, initialize=model.LoadMismatchPenalty/10)
 
         # Ancillary service selectors (for RT market)
@@ -127,6 +126,11 @@ class StorageParams():
         model.MaximumSocStorage = Param(model.BESS_PHS_set, within=PercentFraction,
                                         default=1.0,
                                         initialize=self.storage_attrs.get('maximum_state_of_charge'))
+
+        model.ldes_flag = Param(model.Storage, within=Binary, default=0, initialize=self.storage_attrs.get('ldes_flag', dict()))
+        model.scheduling_problem = Param(within=Binary, default=0, initialize=model.model_data.data.get("scheduling_problem", 0))
+        if value(model.current_market) == "DA" and value(model.scheduling_problem) == 0:
+            model.SchedulingProblemSoC = Param(model.Storage, model.TimePeriods, within = PercentFraction, initialize = self.TimeMapper(self.storage_attrs.get('scheduling_problem_soc')))
 
     ##################################
     # BESS Parameters

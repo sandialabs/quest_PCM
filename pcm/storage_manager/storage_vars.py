@@ -38,10 +38,10 @@ class StorageVars():
             model.InputStorage = Var(model.Storage, model.TimePeriods, within=Reals)
             model.OutputStorage = Var(model.Storage, model.TimePeriods, within=Reals)
             # Fix variables to provided values in relaxed case
-            for s in model.GESS_Storage:
-                for t in model.TimePeriods:
-                    model.InputStorage[s, t].fix(value(model.FixedStorageInput[s, t]))
-                    model.OutputStorage[s, t].fix(value(model.FixedStorageOutput[s, t]))
+            # for s in model.GESS_Storage:
+            #     for t in model.TimePeriods:
+            #         model.InputStorage[s, t].fix(value(model.FixedStorageInput[s, t]))
+            #         model.OutputStorage[s, t].fix(value(model.FixedStorageOutput[s, t]))
         else:
             model.InputStorage = Var(model.Storage, model.TimePeriods, within=Binary)
             model.OutputStorage = Var(model.Storage, model.TimePeriods, within=Binary)

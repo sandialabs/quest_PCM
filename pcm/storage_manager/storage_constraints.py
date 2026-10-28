@@ -35,20 +35,25 @@ class StorageConstraints():
         # storage end-point constraints  
         def storage_end_point_soc_rule(m, s, t):
             # storage s, last time period
-            if m.model_data.data["current_market"] == "DA":
-                m.soc_slack[s, t].fix(0.0)
-                if t == 24:
-                    return m.SocStorage[s, t] >= m.EndPointSocStorage[s]  # Enforce SoC[24] ≥ SoC[0]
-                elif t == value(m.NumTimePeriods):  # Assuming this is 36
-                    return m.SocStorage[s, t] >= m.EndPointSocStorage[s]  # m.SocStorage[s, 24]      # Enforce SoC[36] ≥ SoC[24]
-                else:
-                    return Constraint.Skip
-            else:
+            if m.scheduling_problem == 1:
                 if t == value(m.NumTimePeriods):
-                    return m.SocStorage[s, t] + m.soc_slack[s, t] >= m.RT_SoC_requirement[s,t]
+                    return m.SocStorage[s, t] >= m.EndPointSocStorage[s]  
                 else:
                     m.soc_slack[s, t].fix(0.0)
                     return Constraint.Skip
+            else:   
+                if m.model_data.data["current_market"] == "DA":
+                    if t == value(m.NumTimePeriods):
+                        return m.SocStorage[s, t] >= m.SchedulingProblemSoC[s, t]
+                    else:
+                        m.soc_slack[s, t].fix(0.0)
+                        return Constraint.Skip
+                if m.model_data.data["current_market"] == "RT":
+                    if t == value(m.NumTimePeriods):
+                        return m.SocStorage[s, t] + m.soc_slack[s, t] >= m.RT_SoC_requirement[s,t]
+                    else:
+                        m.soc_slack[s, t].fix(0.0)
+                        return Constraint.Skip
         model.EnforceEndPointSocStorage = Constraint(model.Storage, model.TimePeriods, rule=storage_end_point_soc_rule)
         
     ##################################
